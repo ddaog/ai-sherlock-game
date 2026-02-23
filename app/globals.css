@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-archive-bg: #0a0a0a;
+  --color-archive-surface: #141414;
+  --color-archive-border: #2a2a2a;
+  --color-archive-border-subtle: #1c1c1c;
+  --color-archive-text: #f5f5f5;
+  --color-archive-muted: #b3b3b3;
+  --color-archive-muted-deep: #888888;
+  --color-archive-accent: #ad0000;
+  --color-archive-accent-hover: #c92a2a;
+
+  --font-sans: var(--font-nanum-serif), serif;
+  --font-serif: var(--font-nanum-serif), serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "JetBrains Mono", "Fira Code", monospace;
+
+  --animate-fade-in: fadeIn 0.5s ease-out forwards;
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  100% {
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-archive-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-archive-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-archive-muted-deep);
+}
+
+/* CRT Scanline Effect */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.1));
+  background-size: 100% 4px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.scanlines::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: radial-gradient(circle,
+      transparent 60%,
+      rgba(0, 0, 0, 0.35) 100%);
+  z-index: 51;
+  pointer-events: none;
+}
+
+/* caret blink effect */
+.caret-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-archive-accent) 30%, transparent);
+  color: white;
 }
