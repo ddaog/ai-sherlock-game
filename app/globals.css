@@ -51,7 +51,6 @@
 /* CRT Scanline Effect */
 .scanlines {
   position: relative;
-  overflow: hidden;
 }
 
 .scanlines::before {

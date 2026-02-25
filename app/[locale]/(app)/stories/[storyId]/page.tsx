@@ -449,17 +449,17 @@ export default function StoryPlayPage() {
                     </div>
                 )}
 
-                <div className="shrink-0 px-5 py-5 bg-archive-surface/20 border-b border-archive-border text-[13px] md:text-[14px] text-archive-text/90 space-y-4 z-10 relative font-serif">
+                <div className="shrink-0 px-5 py-5 bg-[#121212] border-b border-archive-border text-[13px] md:text-[14px] text-[#dddddd] space-y-4 z-10 relative font-serif">
                     <p className="leading-snug">
                         시스템은 사건 기록을 보관하고 있으며, 당신의
                         질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
                     </p>
-                    <div className="bg-[#050505] border border-archive-border/80 p-5 rounded-sm text-[13px] md:text-[14px] font-mono leading-relaxed relative overflow-hidden shadow-inner mt-2">
+                    <div className="bg-[#1c1c1c] border border-archive-border p-5 rounded-sm text-[13px] md:text-[14px] font-mono leading-relaxed relative overflow-hidden mt-2">
                         <div className="absolute top-0 left-0 w-1 h-full bg-archive-accent"></div>
                         <p className="font-bold mb-3 text-archive-accent text-[11px] tracking-widest uppercase">
                             &gt; [SYNOPSIS]
                         </p>
-                        <p className="text-archive-text">
+                        <p className="text-[#f0f0f0]">
                             {highlightVictim(
                                 "7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다. 외부 침입 흔적은 없으며, 당시 출입 인원은 총 7명. (다음날 내부 감사 예정)",
                                 VICTIM_NAME
@@ -487,18 +487,18 @@ export default function StoryPlayPage() {
                             <div
                                 className={
                                     msg.role === "user"
-                                        ? "max-w-[85%] rounded-md px-5 py-3 bg-archive-surface border border-archive-border shadow-lg shadow-black/60"
+                                        ? "max-w-[85%] rounded-md px-5 py-3 bg-[#181818] border border-archive-border"
                                         : `max-w-[95%] w-full ${showPaywall && msg.role === "assistant" && i === messages.length - 1 ? 'blur-md select-none opacity-80' : ''}`
                                 }
                             >
                                 {msg.role === "user" ? (
-                                    <p className="text-[16px] text-archive-text font-serif leading-relaxed tracking-wide">
+                                    <p className="text-[16px] text-white font-serif leading-relaxed tracking-wide">
                                         {highlightMessageContent(msg.content ?? "", VICTIM_NAME)}
                                     </p>
                                 ) : (
                                     <div className="space-y-5 text-[16px] font-serif">
                                         {msg.response && (
-                                            <div className="text-archive-text leading-[1.8] whitespace-pre-wrap px-5 py-4 bg-black/40 border-l-2 border-archive-accent rounded-r-md shadow-md">
+                                            <div className="text-white leading-[1.8] whitespace-pre-wrap px-5 py-4 bg-[#141414] border-l-2 border-archive-accent rounded-r-md">
                                                 {i === messages.length - 1 && !loading ? (
                                                     <Typewriter
                                                         text={msg.response}
@@ -576,7 +576,7 @@ export default function StoryPlayPage() {
                     </div>
                 )}
 
-                <div className="shrink-0 p-4 md:p-6 border-t border-archive-border bg-black/95 backdrop-blur-xl z-20 relative">
+                <div className="shrink-0 p-4 md:p-6 border-t border-archive-border bg-[#101010] z-20 relative">
                     {solved ? (
                         <div className="text-center space-y-4">
                             <p className="text-archive-accent font-semibold text-[15px]">사건이 종결되었습니다. 수고하셨습니다 셜록.</p>
@@ -590,7 +590,7 @@ export default function StoryPlayPage() {
                     ) : (
                         <div className="flex gap-3 md:gap-4">
                             <div className="flex-1 relative">
-                                <div className="flex items-stretch rounded-sm border border-archive-border/80 bg-[#0a0a0a] focus-within:border-archive-accent focus-within:ring-1 focus-within:ring-archive-accent/50 max-h-32 overflow-hidden shadow-inner">
+                                <div className="flex items-stretch rounded-sm border border-[#333333] bg-[#1a1a1a] focus-within:border-archive-accent focus-within:ring-1 focus-within:ring-archive-accent/50 max-h-32 overflow-hidden">
                                     <button
                                         type="button"
                                         disabled={showPaywall}
@@ -602,7 +602,7 @@ export default function StoryPlayPage() {
                                             setCommandPaletteIndex(0);
                                             inputRef.current?.focus();
                                         }}
-                                        className="shrink-0 px-3 text-archive-muted-deep hover:text-archive-accent transition-colors font-mono text-lg disabled:opacity-50"
+                                        className="shrink-0 px-3 text-[#bbbbbb] hover:text-archive-accent transition-colors font-mono text-lg disabled:opacity-50"
                                     >
                                         /
                                     </button>
@@ -638,7 +638,7 @@ export default function StoryPlayPage() {
                                                 setTimeout(() => setShowCommandPalette(false), 150);
                                             }}
                                             placeholder={showPaywall ? "ACCESS DENIED..." : "질문해서 사건을 파악해보세요."}
-                                            className="absolute inset-0 w-full min-h-[52px] max-h-32 px-2 py-3.5 bg-transparent text-transparent caret-archive-accent placeholder:text-archive-muted/80 focus:outline-none resize-none text-[15px] md:text-[16px] font-serif leading-[1.5]"
+                                            className="absolute inset-0 w-full min-h-[52px] max-h-32 px-2 py-3.5 bg-transparent text-transparent caret-archive-accent placeholder:text-[#999999] focus:outline-none resize-none text-[15px] md:text-[16px] font-serif leading-[1.5]"
                                             rows={1}
                                             disabled={loading || showPaywall}
                                         />
