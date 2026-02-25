@@ -143,12 +143,14 @@ export default function StoryPlayPage() {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
     const [isSynopsisOpen, setIsSynopsisOpen] = useState(true);
+    const prevMessagesLength = useRef(0);
 
     useEffect(() => {
-        if (messages.length > 0 && isSynopsisOpen) {
+        if (prevMessagesLength.current === 0 && messages.length > 0) {
             setIsSynopsisOpen(false);
         }
-    }, [messages.length, isSynopsisOpen]);
+        prevMessagesLength.current = messages.length;
+    }, [messages.length]);
 
     // SaaS Specific: Paywall and Credits
     const [showPaywall, setShowPaywall] = useState(false);
@@ -459,12 +461,19 @@ export default function StoryPlayPage() {
                 <div className="shrink-0 px-5 py-5 bg-[#121212] border-b border-archive-border text-[13px] md:text-[14px] text-[#dddddd] space-y-4 z-10 relative font-serif transition-all">
                     <button
                         onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
-                        className="w-full flex items-center justify-between text-left hover:text-white transition-colors group"
+                        className="w-full flex items-center justify-between text-left transition-colors group"
                     >
-                        <p className="leading-snug flex-1">
-                            시스템은 사건 기록을 보관하고 있으며, 당신의
-                            질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
-                        </p>
+                        {isSynopsisOpen ? (
+                            <p className="leading-snug flex-1 group-hover:text-white transition-colors">
+                                시스템은 사건 기록을 보관하고 있으며, 당신의
+                                질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
+                            </p>
+                        ) : (
+                            <p className="leading-snug flex-1 text-[#f0f0f0] truncate w-full pr-4 group-hover:text-white transition-colors">
+                                <span className="font-bold text-archive-accent text-[11px] tracking-widest uppercase mr-3">&gt; [SYNOPSIS]</span>
+                                {highlightVictim("7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다.", VICTIM_NAME)}
+                            </p>
+                        )}
                         <span className="ml-4 font-mono text-archive-accent bg-archive-accent/10 border border-archive-accent/30 px-2 py-1 rounded-sm text-[10px] tracking-widest shrink-0 group-hover:bg-archive-accent group-hover:text-white transition-colors">
                             {isSynopsisOpen ? 'CLOSE' : 'OPEN'}
                         </span>
