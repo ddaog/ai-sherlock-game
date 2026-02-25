@@ -142,6 +142,13 @@ export default function StoryPlayPage() {
     const [hintCount, setHintCount] = useState(0);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
+    const [isSynopsisOpen, setIsSynopsisOpen] = useState(true);
+
+    useEffect(() => {
+        if (messages.length > 0 && isSynopsisOpen) {
+            setIsSynopsisOpen(false);
+        }
+    }, [messages.length, isSynopsisOpen]);
 
     // SaaS Specific: Paywall and Credits
     const [showPaywall, setShowPaywall] = useState(false);
@@ -449,23 +456,33 @@ export default function StoryPlayPage() {
                     </div>
                 )}
 
-                <div className="shrink-0 px-5 py-5 bg-[#121212] border-b border-archive-border text-[13px] md:text-[14px] text-[#dddddd] space-y-4 z-10 relative font-serif">
-                    <p className="leading-snug">
-                        시스템은 사건 기록을 보관하고 있으며, 당신의
-                        질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
-                    </p>
-                    <div className="bg-[#1c1c1c] border border-archive-border p-5 rounded-sm text-[13px] md:text-[14px] font-mono leading-relaxed relative overflow-hidden mt-2">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-archive-accent"></div>
-                        <p className="font-bold mb-3 text-archive-accent text-[11px] tracking-widest uppercase">
-                            &gt; [SYNOPSIS]
+                <div className="shrink-0 px-5 py-5 bg-[#121212] border-b border-archive-border text-[13px] md:text-[14px] text-[#dddddd] space-y-4 z-10 relative font-serif transition-all">
+                    <button
+                        onClick={() => setIsSynopsisOpen(!isSynopsisOpen)}
+                        className="w-full flex items-center justify-between text-left hover:text-white transition-colors group"
+                    >
+                        <p className="leading-snug flex-1">
+                            시스템은 사건 기록을 보관하고 있으며, 당신의
+                            질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
                         </p>
-                        <p className="text-[#f0f0f0]">
-                            {highlightVictim(
-                                "7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다. 외부 침입 흔적은 없으며, 당시 출입 인원은 총 7명. (다음날 내부 감사 예정)",
-                                VICTIM_NAME
-                            )}
-                        </p>
-                    </div>
+                        <span className="ml-4 font-mono text-archive-accent bg-archive-accent/10 border border-archive-accent/30 px-2 py-1 rounded-sm text-[10px] tracking-widest shrink-0 group-hover:bg-archive-accent group-hover:text-white transition-colors">
+                            {isSynopsisOpen ? 'CLOSE' : 'OPEN'}
+                        </span>
+                    </button>
+                    {isSynopsisOpen && (
+                        <div className="bg-[#1c1c1c] border border-archive-border p-5 rounded-sm text-[13px] md:text-[14px] font-mono leading-relaxed relative overflow-hidden mt-4 animate-fade-in shadow-inner">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-archive-accent"></div>
+                            <p className="font-bold mb-3 text-archive-accent text-[11px] tracking-widest uppercase">
+                                &gt; [SYNOPSIS]
+                            </p>
+                            <p className="text-[#f0f0f0]">
+                                {highlightVictim(
+                                    "7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다. 외부 침입 흔적은 없으며, 당시 출입 인원은 총 7명. (다음날 내부 감사 예정)",
+                                    VICTIM_NAME
+                                )}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-8 z-10 relative scroll-smooth">
