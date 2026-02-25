@@ -15,7 +15,7 @@ export default function StoriesPage() {
     const t = useTranslations('Stories');
 
     return (
-        <div className="max-w-5xl mx-auto px-6 py-12 w-full font-serif text-archive-text flex-1">
+        <div className="max-w-5xl mx-auto px-6 py-12 w-full font-serif text-archive-text flex-1 overflow-y-auto">
             <div className="mb-12 border-b border-archive-border pb-6 flex items-baseline justify-between">
                 <h1 className="text-3xl font-black tracking-widest text-archive-text uppercase font-mono drop-shadow-[0_0_10px_rgba(245,245,245,0.2)]">
                     {t('title')}

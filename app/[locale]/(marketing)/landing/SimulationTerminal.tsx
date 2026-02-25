@@ -70,7 +70,7 @@ export default function SimulationTerminal() {
     const currentTurn = turns[turnIndex];
 
     return (
-        <div className="text-left bg-[#080808]/90 border border-archive-border rounded-sm p-6 md:p-8 shadow-[0_0_30px_rgba(0,0,0,1)] max-w-2xl mx-auto font-mono text-[14px] md:text-[15px] h-[450px] flex flex-col relative overflow-hidden">
+        <div className="text-left bg-[#080808]/90 border border-archive-border rounded-sm p-5 md:p-8 shadow-[0_0_30px_rgba(0,0,0,1)] max-w-2xl mx-auto font-mono text-[13px] md:text-[15px] h-[350px] md:h-[450px] flex flex-col relative overflow-hidden">
             <p className="text-archive-accent font-bold tracking-widest uppercase text-xs mb-6 border-b border-archive-border-subtle pb-3 shrink-0 z-10">
                 [SYSTEM LOG]
             </p>

@@ -11,7 +11,8 @@
         "sim_q3_text": "The culprit is an insider who staged the break-in.",
         "sim_a3": "[Hypothesis Recorded] \"The culprit is an insider who staged the break-in.\"",
         "sim_q4": "Who among the insiders had access to the study key?",
-        "sim_a4": "On the day of the incident, only the estate manager 'Jihoon Park' and the victim's wife had the key to the study."
+        "sim_a4": "On the day of the incident, only the estate manager 'Jihoon Park' and the victim's wife had the key to the study.",
+        "mobileNotice": "This game is optimized for PC environments."
     },
     "Auth": {
         "loginWithGoogle": "Continue with Google"

@@ -414,8 +414,8 @@ export default function StoryPlayPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen w-full bg-archive-bg relative text-archive-text font-serif scanlines overflow-hidden">
-            <div className="max-w-3xl w-full mx-auto flex flex-col h-full bg-archive-bg/95 shadow-2xl relative z-10 border-x border-archive-border-subtle">
+        <div className="flex flex-col h-full w-full bg-archive-bg relative text-archive-text font-serif scanlines overflow-hidden">
+            <div className="max-w-3xl w-full mx-auto flex flex-col h-full bg-archive-bg/95 shadow-none md:shadow-2xl relative z-10 md:border-x border-archive-border-subtle">
                 <header className="shrink-0 py-2.5 px-4 border-b border-archive-border flex items-center justify-between gap-4 font-mono z-10 relative bg-black/70 backdrop-blur-md">
                     <h1 className="text-[13px] font-bold text-archive-text flex items-center gap-2 tracking-wide uppercase">
                         <span className="w-1.5 h-3 bg-archive-accent caret-blink inline-block mr-2"></span>
@@ -449,14 +449,17 @@ export default function StoryPlayPage() {
                     </div>
                 )}
 
-                <div className="shrink-0 px-4 py-3 bg-archive-surface/30 border-b border-archive-border text-[13px] text-archive-muted space-y-2 z-10 relative font-serif">
+                <div className="shrink-0 px-5 py-5 bg-archive-surface/20 border-b border-archive-border text-[13px] md:text-[14px] text-archive-text/90 space-y-4 z-10 relative font-serif">
                     <p className="leading-snug">
-                        당신은 외부 조사관입니다. 시스템은 사건 기록을 보관하고 있으며, 당신의
-                        질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">본 시스템은 범인을 판정하지 않습니다. 기록을 연결해 전말을 재구성하세요.</span>
+                        시스템은 사건 기록을 보관하고 있으며, 당신의
+                        질문에 따라 기록 일부를 열람할 수 있습니다. <span className="text-archive-accent opacity-90 ml-1">기록을 연결해 전말을 재구성하세요.</span>
                     </p>
-                    <div className="pt-2 mt-2 border-t border-archive-border border-dashed text-archive-text bg-black/40 px-3 py-2 rounded-sm shadow-inner text-[12px]">
-                        <p className="font-bold mb-1.5 font-mono text-archive-accent text-[10px] tracking-widest uppercase">[SYNOPSIS]</p>
-                        <p className="leading-normal">
+                    <div className="bg-[#050505] border border-archive-border/80 p-5 rounded-sm text-[13px] md:text-[14px] font-mono leading-relaxed relative overflow-hidden shadow-inner mt-2">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-archive-accent"></div>
+                        <p className="font-bold mb-3 text-archive-accent text-[11px] tracking-widest uppercase">
+                            &gt; [SYNOPSIS]
+                        </p>
+                        <p className="text-archive-text">
                             {highlightVictim(
                                 "7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다. 외부 침입 흔적은 없으며, 당시 출입 인원은 총 7명. (다음날 내부 감사 예정)",
                                 VICTIM_NAME
@@ -467,11 +470,11 @@ export default function StoryPlayPage() {
 
                 <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-8 z-10 relative scroll-smooth">
                     {messages.length === 0 && (
-                        <div className="text-archive-muted text-[13px] font-serif space-y-3 pb-6 animate-fade-in">
-                            <p className="font-mono text-archive-accent text-[11px] tracking-widest uppercase mb-4">[플레이 방법]</p>
-                            <p><span className="font-mono text-archive-accent">/가설</span> 가설 기록. 예: <span className="font-mono text-archive-accent">/가설</span> 박지훈이 범인인 것 같아</p>
-                            <p><span className="font-mono text-archive-accent">/추리</span> 결론 제출. 예: <span className="font-mono text-archive-accent">/추리</span> 박지훈이 비자금 때문에 약물로 범행했다</p>
-                            <p><span className="font-mono text-archive-accent">/힌트</span> 적당한 힌트 제공 (3회 제한)</p>
+                        <div className="text-archive-text/90 text-[14px] md:text-[15px] font-serif space-y-4 pb-6 animate-fade-in leading-relaxed">
+                            <p className="font-mono text-archive-accent font-bold text-[12px] tracking-widest uppercase mb-4">[플레이 방법]</p>
+                            <p><span className="font-mono text-archive-accent font-bold">/가설</span> 가설 기록. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/가설 박지훈이 범인인 것 같아</span></p>
+                            <p><span className="font-mono text-archive-accent font-bold">/추리</span> 결론 제출. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/추리 박지훈이 비자금 때문...</span></p>
+                            <p><span className="font-mono text-archive-accent font-bold">/힌트</span> 적당한 힌트 제공 (3회 제한)</p>
                         </div>
                     )}
 
@@ -573,21 +576,21 @@ export default function StoryPlayPage() {
                     </div>
                 )}
 
-                <div className="shrink-0 p-6 border-t border-archive-border bg-black/80 backdrop-blur-md z-20 relative">
+                <div className="shrink-0 p-4 md:p-6 border-t border-archive-border bg-black/95 backdrop-blur-xl z-20 relative">
                     {solved ? (
                         <div className="text-center space-y-4">
                             <p className="text-archive-accent font-semibold text-[15px]">사건이 종결되었습니다. 수고하셨습니다 셜록.</p>
                             <button
                                 onClick={handleRestart}
-                                className="px-10 py-2.5 rounded-sm bg-archive-surface text-archive-text font-mono border border-archive-border hover:bg-archive-accent hover:text-white hover:border-archive-accent transition-all text-[13px]"
+                                className="px-10 py-3 md:py-2.5 rounded-sm bg-archive-surface text-archive-text font-bold font-mono border border-archive-border hover:bg-archive-accent hover:text-white hover:border-archive-accent transition-all text-[13px] active:scale-95"
                             >
                                 다시 시작
                             </button>
                         </div>
                     ) : (
-                        <div className="flex gap-4">
+                        <div className="flex gap-3 md:gap-4">
                             <div className="flex-1 relative">
-                                <div className="flex items-stretch rounded-sm border border-archive-border bg-black/60 focus-within:border-archive-accent focus-within:ring-1 focus-within:ring-archive-accent/50 max-h-32 overflow-hidden">
+                                <div className="flex items-stretch rounded-sm border border-archive-border/80 bg-[#0a0a0a] focus-within:border-archive-accent focus-within:ring-1 focus-within:ring-archive-accent/50 max-h-32 overflow-hidden shadow-inner">
                                     <button
                                         type="button"
                                         disabled={showPaywall}
@@ -599,14 +602,14 @@ export default function StoryPlayPage() {
                                             setCommandPaletteIndex(0);
                                             inputRef.current?.focus();
                                         }}
-                                        className="shrink-0 px-3 text-archive-muted hover:text-archive-accent transition-colors font-mono text-lg disabled:opacity-50"
+                                        className="shrink-0 px-3 text-archive-muted-deep hover:text-archive-accent transition-colors font-mono text-lg disabled:opacity-50"
                                     >
                                         /
                                     </button>
                                     <div className="flex-1 relative min-h-[52px]">
                                         <div
                                             ref={inputOverlayRef}
-                                            className="absolute inset-0 px-3 py-3.5 pointer-events-none overflow-auto text-archive-text text-[16px] font-serif leading-[1.5] whitespace-pre-wrap break-words"
+                                            className="absolute inset-0 px-2 py-3.5 pointer-events-none overflow-auto text-archive-text text-[15px] md:text-[16px] font-serif leading-[1.5] whitespace-pre-wrap break-words"
                                             aria-hidden
                                         >
                                             {input ? formatInputWithCommands(input) : null}
@@ -634,8 +637,8 @@ export default function StoryPlayPage() {
                                             onBlur={() => {
                                                 setTimeout(() => setShowCommandPalette(false), 150);
                                             }}
-                                            placeholder={showPaywall ? "ACCESS DENIED..." : "질문해서 사건을 파악해보세요. '/'을 입력해 기능을 사용해보세요."}
-                                            className="absolute inset-0 w-full min-h-[52px] max-h-32 px-3 py-3.5 bg-transparent text-transparent caret-archive-accent placeholder:text-archive-muted-deep focus:outline-none resize-none text-[16px] font-serif leading-[1.5]"
+                                            placeholder={showPaywall ? "ACCESS DENIED..." : "질문해서 사건을 파악해보세요."}
+                                            className="absolute inset-0 w-full min-h-[52px] max-h-32 px-2 py-3.5 bg-transparent text-transparent caret-archive-accent placeholder:text-archive-muted/80 focus:outline-none resize-none text-[15px] md:text-[16px] font-serif leading-[1.5]"
                                             rows={1}
                                             disabled={loading || showPaywall}
                                         />
@@ -672,9 +675,10 @@ export default function StoryPlayPage() {
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading || !input.trim() || showPaywall}
-                                className="shrink-0 px-8 py-2 rounded-sm bg-archive-surface text-archive-text font-bold font-mono tracking-widest hover:bg-archive-accent hover:text-white hover:border-archive-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-archive-border-subtle shadow-md uppercase text-[13px]"
+                                className="shrink-0 px-5 md:px-8 py-2 md:py-2 rounded-sm bg-archive-surface text-archive-text font-bold font-mono tracking-widest hover:bg-archive-accent hover:text-white hover:border-archive-accent disabled:opacity-40 disabled:bg-black/40 disabled:text-archive-muted-deep transition-all border border-archive-border shadow-sm uppercase text-[12px] md:text-[13px] active:scale-95"
                             >
-                                Submit
+                                <span className="hidden md:inline">Submit</span>
+                                <span className="md:hidden">Send</span>
                             </button>
                         </div>
                     )}

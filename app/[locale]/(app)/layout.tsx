@@ -15,7 +15,7 @@ export default async function AppLayout({
     }
 
     return (
-        <div className="min-h-screen bg-archive-bg flex flex-col font-serif scanlines">
+        <div className="h-dvh bg-archive-bg flex flex-col font-serif scanlines overflow-hidden">
             <header className="border-b border-archive-border bg-black/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between font-mono">
                     <div className="font-bold text-lg text-archive-text flex items-center gap-2 tracking-widest uppercase">
