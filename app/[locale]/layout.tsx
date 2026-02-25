@@ -39,7 +39,7 @@ export default async function LocaleLayout({
 
     return (
         <html lang={locale} className={`${nanumMyeongjo.variable} ${jetBrainsMono.variable}`}>
-            <body className="bg-archive-bg text-archive-text min-h-screen font-serif antialiased scanlines">
+            <body className="bg-archive-bg text-archive-text h-dvh w-full overflow-hidden font-serif antialiased scanlines">
                 <NextIntlClientProvider messages={messages}>
                     {children}
                 </NextIntlClientProvider>

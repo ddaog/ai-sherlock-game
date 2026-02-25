@@ -24,8 +24,8 @@ function LoginContent() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-dvh bg-archive-bg px-4 scanlines font-serif">
-            <div className="w-full max-w-md p-8 md:p-10 bg-[#080808]/90 border border-archive-border rounded-sm shadow-[0_0_30px_rgba(0,0,0,1)] relative z-10">
+        <div className="flex flex-col items-center justify-center h-full overflow-y-auto w-full bg-archive-bg px-4 font-serif">
+            <div className="w-full max-w-md p-8 md:p-10 my-8 bg-[#080808]/90 border border-archive-border rounded-sm shadow-[0_0_30px_rgba(0,0,0,1)] relative z-10 shrink-0">
 
                 <div className="flex flex-col items-center text-center space-y-8 relative z-10">
                     <div className="p-4 bg-black/60 rounded-sm border border-archive-border shadow-inner">

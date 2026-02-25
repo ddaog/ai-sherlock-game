@@ -7,8 +7,8 @@ export default function LandingPage() {
     const t = useTranslations('Landing');
 
     return (
-        <div className="flex flex-col min-h-dvh w-full bg-archive-bg relative text-archive-text font-serif scanlines">
-            <div className="max-w-3xl w-full mx-auto flex flex-col min-h-dvh bg-archive-bg/95 shadow-2xl relative z-10 border-x border-archive-border-subtle">
+        <div className="flex flex-col h-full overflow-y-auto w-full bg-archive-bg relative text-archive-text font-serif">
+            <div className="max-w-3xl w-full mx-auto flex flex-col min-h-max bg-archive-bg/95 shadow-2xl relative z-10 border-x border-archive-border-subtle">
                 <header className="shrink-0 py-3 px-6 border-b border-archive-border flex items-center justify-between gap-4 font-mono z-10 relative bg-black/80 backdrop-blur-md">
                     <h1 className="text-lg font-bold text-archive-text flex items-center gap-2 tracking-widest uppercase">
                         <span className="w-2 h-4 bg-archive-accent caret-blink inline-block"></span>
