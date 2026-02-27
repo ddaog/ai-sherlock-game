@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Lock } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useTokenSystem } from '@/lib/hooks/useTokenSystem';
 
 const VICTIM_NAME = "김도윤";
 const MAX_HYPOTHESES = 5;
@@ -153,9 +154,14 @@ export default function StoryPlayPage() {
     }, [messages.length]);
 
     // SaaS Specific: Paywall and Credits
-    const [showPaywall, setShowPaywall] = useState(false);
-    const [queriesLeft, setQueriesLeft] = useState(99);
+    const [userId, setUserId] = useState<string | undefined>();
+    const [isPremium, setIsPremium] = useState(false);
     const [isCheckingEntitlements, setIsCheckingEntitlements] = useState(true);
+
+    const { tokens, isDebugMode, isLoaded: isTokenLoaded, decreaseToken } = useTokenSystem(userId);
+
+    const actualQueriesLeft = isPremium || isDebugMode ? Infinity : tokens;
+    const showPaywall = !isCheckingEntitlements && isTokenLoaded && ((storyId !== '1' && !isPremium && !isDebugMode) || actualQueriesLeft <= 0);
 
     const logEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -166,31 +172,24 @@ export default function StoryPlayPage() {
         const checkEntitlements = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                if (storyId !== '1') setShowPaywall(true);
                 setIsCheckingEntitlements(false);
                 return;
             }
+
+            setUserId(session.user.id);
+
             const { data: sub } = await supabase
                 .from('subscriptions')
                 .select('plan, status')
                 .eq('user_id', session.user.id)
                 .single();
 
-            const isPremium = sub?.status === 'active' && sub?.plan !== 'free';
-
-            if (storyId === '1') {
-                setQueriesLeft(isPremium ? Infinity : 99);
-            } else {
-                if (!isPremium) {
-                    setShowPaywall(true);
-                } else {
-                    setQueriesLeft(Infinity);
-                }
-            }
+            const isPremiumSub = sub?.status === 'active' && sub?.plan !== 'free';
+            setIsPremium(isPremiumSub);
             setIsCheckingEntitlements(false);
         };
         checkEntitlements();
-    }, [storyId, supabase]);
+    }, [supabase]);
 
     // Simplified load state since we don't have localStorage persistence built-in for MVP port
     // In a full SaaS app this would come from Supabase DB `game_sessions` table
@@ -230,8 +229,7 @@ export default function StoryPlayPage() {
         const trimmed = input.trim();
         if (!trimmed || loading || solved || showPaywall) return;
 
-        if (queriesLeft <= 0) {
-            setShowPaywall(true);
+        if (actualQueriesLeft <= 0) {
             return;
         }
 
@@ -267,8 +265,8 @@ export default function StoryPlayPage() {
         setInput("");
         setLoading(true);
 
-        if (queriesLeft !== Infinity) {
-            setQueriesLeft(prev => prev - 1);
+        if (!isPremium && !isDebugMode) {
+            decreaseToken();
         }
 
         try {
@@ -349,11 +347,6 @@ export default function StoryPlayPage() {
             ]);
             setSuggestionIndex(-1);
 
-            // Trigger Paywall if 0 credits
-            if (queriesLeft - 1 === 0) {
-                setShowPaywall(true);
-            }
-
         } catch {
             setMessages((prev) => [
                 ...prev,
@@ -429,10 +422,11 @@ export default function StoryPlayPage() {
                     <h1 className="text-[13px] font-bold text-archive-text flex items-center gap-2 tracking-wide uppercase">
                         <span className="w-1.5 h-3 bg-archive-accent caret-blink inline-block mr-2"></span>
                         Story File #{storyId}
+                        {isDebugMode && <span className="ml-2 px-1.5 py-0.5 bg-[#ffcc00]/20 border border-[#ffcc00]/50 text-[#ffcc00] text-[9px] rounded-sm font-bold">DEBUG</span>}
                     </h1>
-                    {queriesLeft !== Infinity && !showPaywall && (
+                    {actualQueriesLeft !== Infinity && !showPaywall && (
                         <span className="text-[11px] font-mono text-archive-accent px-2 py-0.5 border border-archive-accent/30 rounded-sm bg-archive-accent/10">
-                            QUERIES REMAINING: {queriesLeft}
+                            QUERIES REMAINING: {actualQueriesLeft}
                         </span>
                     )}
                 </header>
