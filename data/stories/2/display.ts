@@ -1,6 +1,6 @@
 import type { StoryDisplayConfig } from '@/data/registry';
 
-export const VICTIM_NAME = "에녹 드레버 (Enoch Drebber)";
+export const VICTIM_NAME = "에녹 드레버";
 
 export const SYNOPSIS = {
     short: "밀실이나 다름없는 낡은 저택에서 발견된 남자의 시신. 청색증을 띤 그의 얼굴과 기묘한 자세만이 유일한 단서다.",

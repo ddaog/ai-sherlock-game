@@ -38,7 +38,7 @@ function highlightVictim(text: string, victim: string) {
     const parts = text.split(new RegExp(`(${victim})`, "g"));
     return parts.map((part, i) =>
         part === victim ? (
-            <span key={i} className="text-[#ff4444] font-bold drop-shadow-md">
+            <span key={i} className="text-archive-accent font-semibold">
                 {part}
             </span>
         ) : (
@@ -52,7 +52,7 @@ function highlightMessageContent(text: string, victim: string) {
     const parts = text.split(new RegExp(`(${victim}|/가설|/추리|/힌트|/포기)`, "g"));
     return parts.map((part, i) =>
         part === victim ? (
-            <span key={i} className="text-[#ff4444] font-bold drop-shadow-md">
+            <span key={i} className="text-archive-accent font-semibold">
                 {part}
             </span>
         ) : ["/가설", "/추리", "/힌트", "/포기"].includes(part) ? (
