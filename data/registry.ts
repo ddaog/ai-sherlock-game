@@ -9,6 +9,7 @@ import type { CaseConfig } from '@/data/stories/1/config';
 // Define the shape of a generic Story Display Config
 export interface StoryDisplayConfig {
     VICTIM_NAME: string;
+    VICTIM_ALIASES?: string[];
     SYNOPSIS: {
         short: string;
         full: string;

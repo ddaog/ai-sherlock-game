@@ -33,11 +33,15 @@ function getSlashCommands(hintCount: number) {
 const isCompleteCommand = (v: string) =>
     v.startsWith("/가설") || v.startsWith("/추리") || v.startsWith("/힌트") || v.startsWith("/포기");
 
-function highlightVictim(text: string, victim: string) {
-    if (!victim || !text) return text;
-    const parts = text.split(new RegExp(`(${victim})`, "g"));
+function highlightVictim(text: string, victim: string, aliases: string[] = []) {
+    if (!text || (!victim && aliases.length === 0)) return text;
+    const namesMatched = [victim, ...aliases].filter(Boolean).sort((a, b) => b.length - a.length);
+    if (namesMatched.length === 0) return text;
+
+    const regex = new RegExp(`(${namesMatched.join('|')})`, "g");
+    const parts = text.split(regex);
     return parts.map((part, i) =>
-        part === victim ? (
+        namesMatched.includes(part) ? (
             <span key={i} className="text-archive-accent font-semibold">
                 {part}
             </span>
@@ -47,11 +51,14 @@ function highlightVictim(text: string, victim: string) {
     );
 }
 
-function highlightMessageContent(text: string, victim: string) {
+function highlightMessageContent(text: string, victim: string, aliases: string[] = []) {
     if (!text) return text;
-    const parts = text.split(new RegExp(`(${victim}|/가설|/추리|/힌트|/포기)`, "g"));
+    const namesMatched = [victim, ...aliases].filter(Boolean).sort((a, b) => b.length - a.length);
+    const namesRegexPart = namesMatched.length > 0 ? namesMatched.join('|') + '|' : '';
+
+    const parts = text.split(new RegExp(`(${namesRegexPart}/가설|/추리|/힌트|/포기)`, "g"));
     return parts.map((part, i) =>
-        part === victim ? (
+        namesMatched.includes(part) ? (
             <span key={i} className="text-archive-accent font-semibold">
                 {part}
             </span>
@@ -82,10 +89,12 @@ function Typewriter({
     text,
     onType,
     victim,
+    aliases = [],
 }: {
     text: string;
     onType?: () => void;
     victim?: string;
+    aliases?: string[];
 }) {
     const [displayedText, setDisplayedText] = useState("");
     const onTypeRef = useRef(onType);
@@ -108,7 +117,7 @@ function Typewriter({
 
     return (
         <>
-            {victim ? highlightVictim(displayedText, victim) : displayedText}
+            {victim ? highlightVictim(displayedText, victim, aliases) : displayedText}
             {displayedText.length < text.length && (
                 <span className="inline-block w-2 h-4 bg-archive-accent ml-1 -mb-0.5 align-baseline animate-pulse"></span>
             )}
@@ -134,6 +143,7 @@ export default function StoryPlayPage() {
 
     const [displayConfig, setDisplayConfig] = useState<StoryDisplayConfig | null>(null);
     const VICTIM_NAME = displayConfig?.VICTIM_NAME || "";
+    const VICTIM_ALIASES = displayConfig?.VICTIM_ALIASES || [];
 
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -481,7 +491,7 @@ export default function StoryPlayPage() {
                                 <li key={h.id} className="text-[13px] flex items-start gap-1.5">
                                     <span className="text-archive-muted shrink-0 mt-0.5">-</span>
                                     <span>
-                                        <span className="font-bold mr-1">{h.id}</span> {highlightVictim(h.text, VICTIM_NAME)}
+                                        <span className="font-bold mr-1">{h.id}</span> {highlightVictim(h.text, VICTIM_NAME, VICTIM_ALIASES)}
                                         <span className="text-archive-muted-deep ml-1.5 text-[11px] font-mono tracking-tight">
                                             (지지 {h.support} / 충돌 {h.conflict})
                                         </span>
@@ -505,7 +515,7 @@ export default function StoryPlayPage() {
                         ) : (
                             <p className="leading-snug flex-1 text-[#f0f0f0] truncate w-full pr-4 group-hover:text-white transition-colors">
                                 <span className="font-bold text-archive-accent text-[11px] tracking-widest uppercase mr-3">&gt; [SYNOPSIS]</span>
-                                {highlightVictim(displayConfig.SYNOPSIS.short, VICTIM_NAME)}
+                                {highlightVictim(displayConfig.SYNOPSIS.short, VICTIM_NAME, VICTIM_ALIASES)}
                             </p>
                         )}
                         <span className="ml-4 font-mono text-archive-accent bg-archive-accent/10 border border-archive-accent/30 px-2 py-1 rounded-sm text-[10px] tracking-widest shrink-0 group-hover:bg-archive-accent group-hover:text-white transition-colors">
@@ -521,7 +531,8 @@ export default function StoryPlayPage() {
                             <p className="text-[#f0f0f0]">
                                 {highlightVictim(
                                     displayConfig.SYNOPSIS.full,
-                                    VICTIM_NAME
+                                    VICTIM_NAME,
+                                    VICTIM_ALIASES
                                 )}
                             </p>
                         </div>
@@ -553,7 +564,7 @@ export default function StoryPlayPage() {
                             >
                                 {msg.role === "user" ? (
                                     <p className="text-[16px] text-white font-serif leading-relaxed tracking-wide">
-                                        {highlightMessageContent(msg.content ?? "", VICTIM_NAME)}
+                                        {highlightMessageContent(msg.content ?? "", VICTIM_NAME, VICTIM_ALIASES)}
                                     </p>
                                 ) : (
                                     <div className="space-y-5 text-[16px] font-serif">
@@ -573,7 +584,7 @@ export default function StoryPlayPage() {
                                         {msg.badge && (
                                             <div className="px-5 py-3 mt-4 rounded-md bg-archive-accent/10 border border-archive-accent/30">
                                                 <p className="font-mono text-[13px] font-semibold text-archive-accent tracking-wider">
-                                                    [업적] {msg.badge.title} : {highlightVictim(msg.badge.condition, VICTIM_NAME)}
+                                                    [업적] {msg.badge.title} : {highlightVictim(msg.badge.condition, VICTIM_NAME, VICTIM_ALIASES)}
                                                 </p>
                                             </div>
                                         )}
@@ -589,7 +600,7 @@ export default function StoryPlayPage() {
                                                 <ul className="list-disc list-inside text-archive-accent/90 space-y-2">
                                                     {msg.suggestions.map((s, j) => (
                                                         <li key={j} className="text-archive-text/90 text-[15px] pl-1 cursor-pointer hover:text-archive-accent" onClick={() => setInput(s)}>
-                                                            {highlightVictim(s, VICTIM_NAME)}
+                                                            {highlightVictim(s, VICTIM_NAME, VICTIM_ALIASES)}
                                                         </li>
                                                     ))}
                                                 </ul>
