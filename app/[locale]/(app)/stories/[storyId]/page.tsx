@@ -575,9 +575,10 @@ export default function StoryPlayPage() {
                                                         text={msg.response}
                                                         onType={() => logEndRef.current?.scrollIntoView({ behavior: "auto" })}
                                                         victim={VICTIM_NAME}
+                                                        aliases={VICTIM_ALIASES}
                                                     />
                                                 ) : (
-                                                    highlightVictim(msg.response, VICTIM_NAME)
+                                                    highlightVictim(msg.response, VICTIM_NAME, VICTIM_ALIASES)
                                                 )}
                                             </div>
                                         )}
