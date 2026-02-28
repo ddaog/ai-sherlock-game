@@ -80,11 +80,21 @@ export function useTokenSystem(userId: string | undefined) {
     }, [userId, tokens, isDebugMode]);
 
     const triggerDebugMode = useCallback(() => {
+        if (!userId) return false;
+        const newDebugState = !isDebugMode;
+        localStorage.setItem(`sherlock_debug_${userId}`, String(newDebugState));
+        if (newDebugState) {
+            localStorage.setItem(`sherlock_tokens_${userId}`, String(MAX_TOKENS));
+            setTokens(MAX_TOKENS);
+        }
+        setIsDebugMode(newDebugState);
+        return newDebugState;
+    }, [userId, isDebugMode]);
+
+    const setTokensForDebug = useCallback((amount: number) => {
         if (!userId) return;
-        localStorage.setItem(`sherlock_debug_${userId}`, 'true');
-        localStorage.setItem(`sherlock_tokens_${userId}`, String(MAX_TOKENS));
-        setIsDebugMode(true);
-        setTokens(MAX_TOKENS);
+        localStorage.setItem(`sherlock_tokens_${userId}`, String(amount));
+        setTokens(amount);
     }, [userId]);
 
     return {
@@ -92,6 +102,7 @@ export function useTokenSystem(userId: string | undefined) {
         isDebugMode,
         isLoaded,
         decreaseToken,
-        triggerDebugMode
+        triggerDebugMode,
+        setTokensForDebug
     };
 }

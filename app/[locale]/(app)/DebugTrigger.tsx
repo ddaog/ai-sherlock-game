@@ -16,8 +16,12 @@ export default function DebugTrigger({ userId, children }: { userId: string; chi
             const newClicks = clicks + 1;
             setClicks(newClicks);
             if (newClicks >= 5) {
-                triggerDebugMode();
-                alert("DEBUG MODE ACTIVATED: Tokens filled & All stories unlocked.");
+                const newState = triggerDebugMode();
+                if (newState) {
+                    alert("DEBUG MODE ACTIVATED: Tokens filled & All stories unlocked.");
+                } else {
+                    alert("DEBUG MODE DEACTIVATED: Play permissions returned to normal.");
+                }
                 setClicks(0);
             }
         }

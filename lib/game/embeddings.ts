@@ -15,16 +15,17 @@ export interface EvidenceWithEmbedding extends Evidence {
   embedding: number[];
 }
 
-const EVIDENCE_PATH = path.join(process.cwd(), "data", "evidence.json");
-const EMBEDDINGS_PATH = path.join(process.cwd(), "data", "embeddings.json");
+const getEvidencePath = (storyId: string) => path.join(process.cwd(), "data", "stories", storyId, "evidence.json");
+const getEmbeddingsPath = (storyId: string) => path.join(process.cwd(), "data", "stories", storyId, "embeddings.json");
 
-function loadEvidence(): Evidence[] {
-  const raw = fs.readFileSync(EVIDENCE_PATH, "utf-8");
+function loadEvidence(storyId: string): Evidence[] {
+  const p = getEvidencePath(storyId);
+  const raw = fs.readFileSync(p, "utf-8");
   return JSON.parse(raw);
 }
 
-export function loadEvidenceSync(): Evidence[] {
-  return loadEvidence();
+export function loadEvidenceSync(storyId: string): Evidence[] {
+  return loadEvidence(storyId);
 }
 
 function getEmbeddingText(ev: Evidence): string {
@@ -38,17 +39,18 @@ function getEmbeddingText(ev: Evidence): string {
   ].join(" ");
 }
 
-export function loadOrCreateEmbeddings(): EvidenceWithEmbedding[] {
-  if (fs.existsSync(EMBEDDINGS_PATH)) {
-    const raw = fs.readFileSync(EMBEDDINGS_PATH, "utf-8");
+export function loadOrCreateEmbeddings(storyId: string): EvidenceWithEmbedding[] {
+  const p = getEmbeddingsPath(storyId);
+  if (fs.existsSync(p)) {
+    const raw = fs.readFileSync(p, "utf-8");
     return JSON.parse(raw);
   }
   return [];
 }
 
-export async function ensureEmbeddings(): Promise<EvidenceWithEmbedding[]> {
-  const cached = loadOrCreateEmbeddings();
-  const evidence = loadEvidence();
+export async function ensureEmbeddings(storyId: string): Promise<EvidenceWithEmbedding[]> {
+  const cached = loadOrCreateEmbeddings(storyId);
+  const evidence = loadEvidence(storyId);
 
   if (cached.length === evidence.length) {
     const ids = new Set(cached.map((e) => e.id));
@@ -65,7 +67,7 @@ export async function ensureEmbeddings(): Promise<EvidenceWithEmbedding[]> {
     results.push({ ...ev, embedding });
   }
 
-  fs.writeFileSync(EMBEDDINGS_PATH, JSON.stringify(results, null, 2), "utf-8");
+  fs.writeFileSync(getEmbeddingsPath(storyId), JSON.stringify(results, null, 2), "utf-8");
   return results;
 }
 
@@ -84,10 +86,11 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 export async function getTopKEvidence(
+  storyId: string,
   query: string,
   k: number = 10
 ): Promise<{ evidence: Evidence[]; embeddingUsage: EmbeddingUsage }> {
-  const withEmbeddings = await ensureEmbeddings();
+  const withEmbeddings = await ensureEmbeddings(storyId);
   const { embedding: queryEmbedding, usage: embeddingUsage } = await getEmbedding(query);
 
   const scored = withEmbeddings.map((ev) => ({

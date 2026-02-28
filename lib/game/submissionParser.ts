@@ -1,4 +1,4 @@
-import type { CaseConfig } from "@/data/case.config";
+import type { StoryConfig } from "@/data/registry";
 
 export interface ParseResult {
   suspectMentioned: boolean;
@@ -10,8 +10,8 @@ export interface ParseResult {
 
 export function parseSubmission(
   gameText: string,
-  parsing: CaseConfig["parsing"],
-  solution: CaseConfig["solution"]
+  parsing: StoryConfig["parsing"],
+  solution: StoryConfig["solution"]
 ): ParseResult {
   let normalized = gameText.trim();
 

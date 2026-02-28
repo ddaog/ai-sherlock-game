@@ -14,7 +14,7 @@ const STORIES = [
     { id: '6', title: 'The Empty Server', isFree: false },
 ];
 
-export default function StoryGrid({ userId }: { userId: string }) {
+export default function StoryGrid({ userId, isPremium }: { userId: string, isPremium: boolean }) {
     const t = useTranslations('Stories');
     const { isDebugMode, isLoaded } = useTokenSystem(userId);
 
@@ -22,8 +22,8 @@ export default function StoryGrid({ userId }: { userId: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {STORIES.map((story) => {
                 // To prevent layout shift hydration mismatch, we default to the server state 
-                // but unlock if debug mode is confirmed
-                const isLocked = !story.isFree && (!isLoaded || !isDebugMode);
+                // but unlock if debug mode or premium is confirmed
+                const isLocked = !story.isFree && (!isLoaded || (!isDebugMode && !isPremium));
 
                 return (
                     <Link

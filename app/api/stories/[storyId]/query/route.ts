@@ -16,8 +16,8 @@ import {
   nextHypothesisId,
 } from "@/lib/game/hypothesesSimple";
 import { evaluateBadges } from "@/lib/game/badgeEngine";
+import { getStoryConfig } from "@/data/registry";
 import { loadEvidenceSync } from "@/lib/game/embeddings";
-import { CASE_CONFIG } from "@/data/case.config";
 import { parseSubmission } from "@/lib/game/submissionParser";
 import { gradeSubmission, isSolved } from "@/lib/game/grader";
 
@@ -94,13 +94,19 @@ SUGGESTION:
 결론 형식의 일반 질문이면: RESPONSE: 근거 확인을 위해 /추리로 결론을 제출해 주세요.
 SUGGESTION에 관련 조회 예시 2~3개 제시.`;
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ storyId: string }> }) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "unknown";
   if (!rateLimit(ip)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }
     );
+  }
+
+  const { storyId } = await params;
+  const config = await getStoryConfig(storyId);
+  if (!config) {
+    return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
 
   let body: {
@@ -189,7 +195,6 @@ export async function POST(req: NextRequest) {
         usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
       });
     }
-    const config = CASE_CONFIG;
     const responseText = `[포기]
 
 ${config.ending.solvedTitle}
@@ -230,7 +235,6 @@ ${config.ending.closedLine}`;
         usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
       });
     }
-    const config = CASE_CONFIG;
     const hints: string[] = [
       "21시 전후 3층 복도와 집무실의 동선을 추적해 보세요. 누가 언제 출입했는지가 중요합니다.",
       "김도윤이 쓰러지기 전에 무슨 일이 있었는지, 약물·타격·지문과 관련된 기록을 찾아보세요.",
@@ -473,7 +477,6 @@ ${config.ending.closedLine}`;
   }
 
   if (query.trim().startsWith("/추리 ")) {
-    const config = CASE_CONFIG;
     const gameText = query.trim().replace(/^\/추리\s+/i, "").trim();
 
     if (!gameText) {
@@ -576,7 +579,7 @@ ${config.ending.closedLine}`;
   }
 
   try {
-    const { evidence: topK, embeddingUsage } = await getTopKEvidence(query, 10);
+    const { evidence: topK, embeddingUsage } = await getTopKEvidence(storyId, query, 10);
     const context = topK
       .map(
         (e) =>
@@ -655,7 +658,7 @@ USER QUERY: ${query}
     }
 
     const currentTurnRecordIds = recordIds;
-    const allEvidence = loadEvidenceSync();
+    const allEvidence = loadEvidenceSync(storyId);
     const currentTurnEvidence = allEvidence.filter((e) =>
       currentTurnRecordIds.includes(e.id)
     );

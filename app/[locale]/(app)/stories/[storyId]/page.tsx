@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import type { Hypothesis } from "@/lib/game/hypothesesSimple";
 import { useTranslations } from 'next-intl';
-import { Lock } from 'lucide-react';
+import { Lock, ChevronLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTokenSystem } from '@/lib/hooks/useTokenSystem';
+import { getStoryDisplay, type StoryDisplayConfig } from '@/data/registry';
+import { Link } from '@/lib/i18n/routing';
 
-const VICTIM_NAME = "김도윤";
 const MAX_HYPOTHESES = 5;
 const MAX_HINTS = 3;
 
@@ -128,7 +129,11 @@ export default function StoryPlayPage() {
     const t = useTranslations('Game');
     const params = useParams();
     const supabase = createClient();
-    const storyId = Array.isArray(params.storyId) ? params.storyId[0] : params.storyId;
+    const storyIdParam = Array.isArray(params.storyId) ? params.storyId[0] : params.storyId;
+    const storyId = storyIdParam || "1"; // Fallback to 1 if undefined
+
+    const [displayConfig, setDisplayConfig] = useState<StoryDisplayConfig | null>(null);
+    const VICTIM_NAME = displayConfig?.VICTIM_NAME || "";
 
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -147,6 +152,16 @@ export default function StoryPlayPage() {
     const prevMessagesLength = useRef(0);
 
     useEffect(() => {
+        const fetchConfig = async () => {
+            const config = await getStoryDisplay(storyId);
+            if (config) {
+                setDisplayConfig(config);
+            }
+        };
+        fetchConfig();
+    }, [storyId]);
+
+    useEffect(() => {
         if (prevMessagesLength.current === 0 && messages.length > 0) {
             setIsSynopsisOpen(false);
         }
@@ -158,7 +173,8 @@ export default function StoryPlayPage() {
     const [isPremium, setIsPremium] = useState(false);
     const [isCheckingEntitlements, setIsCheckingEntitlements] = useState(true);
 
-    const { tokens, isDebugMode, isLoaded: isTokenLoaded, decreaseToken } = useTokenSystem(userId);
+    const { tokens, isDebugMode, isLoaded: isTokenLoaded, decreaseToken, setTokensForDebug } = useTokenSystem(userId);
+    const [queriesClickCount, setQueriesClickCount] = useState(0);
 
     const actualQueriesLeft = isPremium || isDebugMode ? Infinity : tokens;
     const showPaywall = !isCheckingEntitlements && isTokenLoaded && ((storyId !== '1' && !isPremium && !isDebugMode) || actualQueriesLeft <= 0);
@@ -221,8 +237,19 @@ export default function StoryPlayPage() {
         setShowCommandPalette(false);
     };
 
-    const handlePaywallUpgrade = () => {
-        alert("Upgrade options coming soon!");
+    const handlePaywallUpgrade = (plan: 'lestrade' | 'sherlock' | 'holmes') => {
+        if (!userId) return;
+        let productId = "";
+        if (plan === 'lestrade') productId = process.env.NEXT_PUBLIC_POLAR_LESTRADE_ID || "";
+        if (plan === 'sherlock') productId = process.env.NEXT_PUBLIC_POLAR_SHERLOCK_ID || "";
+        if (plan === 'holmes') productId = process.env.NEXT_PUBLIC_POLAR_HOLMES_ID || "";
+
+        if (!productId) {
+            alert("Pricing packages are not fully configured yet.");
+            return;
+        }
+
+        window.location.href = `/api/checkout?products=${productId}&customerExternalId=${userId}`;
     };
 
     const handleSubmit = async () => {
@@ -315,10 +342,7 @@ export default function StoryPlayPage() {
                     {
                         role: "assistant",
                         response: data.error || "오류가 발생했습니다.",
-                        suggestions: [
-                            "7월 18일 당시 별관 출입 기록은?",
-                            "피해자 김도윤과 관련된 인물은?",
-                        ],
+                        suggestions: displayConfig?.defaultSuggestions || [],
                     },
                 ]);
                 setSuggestionIndex(-1);
@@ -411,7 +435,7 @@ export default function StoryPlayPage() {
         }
     };
 
-    if (isCheckingEntitlements) {
+    if (isCheckingEntitlements || !displayConfig) {
         return <div className="flex-1 flex items-center justify-center bg-archive-bg"><span className="w-5 h-5 border-2 border-archive-muted-deep border-t-archive-accent rounded-full animate-spin"></span></div>;
     }
 
@@ -419,15 +443,31 @@ export default function StoryPlayPage() {
         <div className="flex flex-col h-full w-full bg-archive-bg relative text-archive-text font-serif scanlines overflow-hidden">
             <div className="max-w-3xl w-full mx-auto flex flex-col h-full bg-archive-bg/95 shadow-none md:shadow-2xl relative z-10 md:border-x border-archive-border-subtle">
                 <header className="shrink-0 py-2.5 px-4 border-b border-archive-border flex items-center justify-between gap-4 font-mono z-10 relative bg-black/70 backdrop-blur-md">
-                    <h1 className="text-[13px] font-bold text-archive-text flex items-center gap-2 tracking-wide uppercase">
-                        <span className="w-1.5 h-3 bg-archive-accent caret-blink inline-block mr-2"></span>
-                        Story File #{storyId}
-                        {isDebugMode && <span className="ml-2 px-1.5 py-0.5 bg-[#ffcc00]/20 border border-[#ffcc00]/50 text-[#ffcc00] text-[9px] rounded-sm font-bold">DEBUG</span>}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <Link href="/stories" className="text-archive-muted hover:text-archive-accent transition-colors flex items-center pr-2 border-r border-archive-border/50">
+                            <ChevronLeft className="w-4 h-4" />
+                        </Link>
+                        <h1 className="text-[13px] font-bold text-archive-text flex items-center gap-2 tracking-wide uppercase">
+                            <span className="w-1.5 h-3 bg-archive-accent caret-blink inline-block mr-2"></span>
+                            Story File #{storyId}
+                            {isDebugMode && <span className="ml-2 px-1.5 py-0.5 bg-[#ffcc00]/20 border border-[#ffcc00]/50 text-[#ffcc00] text-[9px] rounded-sm font-bold">DEBUG</span>}
+                        </h1>
+                    </div>
                     {actualQueriesLeft !== Infinity && !showPaywall && (
-                        <span className="text-[11px] font-mono text-archive-accent px-2 py-0.5 border border-archive-accent/30 rounded-sm bg-archive-accent/10">
+                        <button
+                            onClick={() => {
+                                const nextCount = queriesClickCount + 1;
+                                if (nextCount >= 5) {
+                                    setTokensForDebug(5);
+                                    setQueriesClickCount(0);
+                                } else {
+                                    setQueriesClickCount(nextCount);
+                                }
+                            }}
+                            className="text-[11px] font-mono text-archive-accent px-2 py-0.5 border border-archive-accent/30 rounded-sm bg-archive-accent/10 whitespace-nowrap cursor-pointer hover:bg-archive-accent/20 transition-colors"
+                        >
                             QUERIES REMAINING: {actualQueriesLeft}
-                        </span>
+                        </button>
                     )}
                 </header>
 
@@ -465,7 +505,7 @@ export default function StoryPlayPage() {
                         ) : (
                             <p className="leading-snug flex-1 text-[#f0f0f0] truncate w-full pr-4 group-hover:text-white transition-colors">
                                 <span className="font-bold text-archive-accent text-[11px] tracking-widest uppercase mr-3">&gt; [SYNOPSIS]</span>
-                                {highlightVictim("7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다.", VICTIM_NAME)}
+                                {highlightVictim(displayConfig.SYNOPSIS.short, VICTIM_NAME)}
                             </p>
                         )}
                         <span className="ml-4 font-mono text-archive-accent bg-archive-accent/10 border border-archive-accent/30 px-2 py-1 rounded-sm text-[10px] tracking-widest shrink-0 group-hover:bg-archive-accent group-hover:text-white transition-colors">
@@ -480,7 +520,7 @@ export default function StoryPlayPage() {
                             </p>
                             <p className="text-[#f0f0f0]">
                                 {highlightVictim(
-                                    "7월 18일 밤, 회사 별관 3층에서 CFO 김도윤이 의식불명 상태로 발견되었다. 외부 침입 흔적은 없으며, 당시 출입 인원은 총 7명. (다음날 내부 감사 예정)",
+                                    displayConfig.SYNOPSIS.full,
                                     VICTIM_NAME
                                 )}
                             </p>
@@ -584,12 +624,18 @@ export default function StoryPlayPage() {
                                 {t('upgradePrompt')}
                             </p>
 
-                            <div className="w-full flex flex-col gap-3 font-mono text-[13px] tracking-widest uppercase font-bold">
-                                <button onClick={handlePaywallUpgrade} className="w-full py-3 px-4 bg-archive-surface text-archive-text border border-archive-border hover:bg-archive-accent/10 transition-colors rounded-sm">
-                                    Lestrade Plan - $1.99
+                            <div className="w-full flex flex-col gap-3 font-mono text-[12px] tracking-widest uppercase font-bold">
+                                <button onClick={() => handlePaywallUpgrade('lestrade')} className="w-full py-3 px-4 bg-archive-surface text-archive-text border border-archive-border hover:bg-archive-accent/10 transition-colors rounded-sm flex justify-between items-center">
+                                    <span>Lestrade Plan</span>
+                                    <span className="text-archive-accent">$4.99</span>
                                 </button>
-                                <button onClick={handlePaywallUpgrade} className="w-full py-3 px-4 bg-archive-accent text-white hover:opacity-90 transition-opacity shadow-md rounded-sm border border-archive-accent">
-                                    Sherlock Plan - $8.99
+                                <button onClick={() => handlePaywallUpgrade('sherlock')} className="w-full py-3 px-4 bg-archive-accent text-white hover:opacity-90 transition-opacity shadow-md rounded-sm border border-archive-accent flex justify-between items-center">
+                                    <span>Sherlock Plan</span>
+                                    <span>$9.99</span>
+                                </button>
+                                <button onClick={() => handlePaywallUpgrade('holmes')} className="w-full py-3 px-4 bg-archive-surface text-archive-accent border border-archive-accent hover:bg-archive-accent hover:text-white transition-colors rounded-sm flex justify-between items-center">
+                                    <span>Holmes Plan</span>
+                                    <span>$19.99</span>
                                 </button>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import type { CaseConfig } from "@/data/case.config";
+import type { StoryConfig } from "@/data/registry";
 import type { ParseResult } from "./submissionParser";
 
 export type Grade = "A" | "B" | "C";
@@ -32,7 +32,7 @@ export function isSolved(
   grade: Grade,
   gameText: string,
   parse: ParseResult,
-  solution: CaseConfig["solution"]
+  solution: StoryConfig["solution"]
 ): boolean {
   if (grade !== "A") return false;
   if (parse.motiveHits < 1 || parse.methodHits < 1) return false;
