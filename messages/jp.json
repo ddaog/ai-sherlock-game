@@ -20,7 +20,15 @@
     "Stories": {
         "title": "ストーリーを選択",
         "locked": "ロック",
-        "play": "プレイ"
+        "play": "プレイ",
+        "list": {
+            "1": "消えた探偵 (The Vanishing Detective)",
+            "2": "あるチアノーゼの研究 (A Study in Cyan)",
+            "3": "シリコンバレーの魔犬 (The Hound of Silicon Valley)",
+            "4": "四つのバイトの署名 (Sign of the Four Bytes)",
+            "5": "最後の変数 (The Final Variable)",
+            "6": "空のサーバー (The Empty Server)"
+        }
     },
     "Game": {
         "upgradePrompt": "回答を表示してヒントをさらに増やすにはアップグレードしてください！",

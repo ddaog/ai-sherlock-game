@@ -6,12 +6,12 @@ import { Lock, FileText } from 'lucide-react';
 import { useTokenSystem } from '@/lib/hooks/useTokenSystem';
 
 const STORIES = [
-    { id: '1', title: 'The Vanishing Detective', isFree: true },
-    { id: '2', title: 'A Study in Cyan', isFree: false },
-    { id: '3', title: 'The Hound of Silicon Valley', isFree: false },
-    { id: '4', title: 'Sign of the Four Bytes', isFree: false },
-    { id: '5', title: 'The Final Variable', isFree: false },
-    { id: '6', title: 'The Empty Server', isFree: false },
+    { id: '1', isFree: true },
+    { id: '2', isFree: false },
+    { id: '3', isFree: false },
+    { id: '4', isFree: false },
+    { id: '5', isFree: false },
+    { id: '6', isFree: false },
 ];
 
 export default function StoryGrid({ userId, isPremium }: { userId: string, isPremium: boolean }) {
@@ -47,7 +47,7 @@ export default function StoryGrid({ userId, isPremium }: { userId: string, isPre
                         </div>
 
                         <h3 className={`text-xl font-bold mb-3 tracking-wide ${isLocked ? 'text-archive-muted-deep' : 'text-archive-text'}`}>
-                            {story.title}
+                            {t(`list.${story.id}`)}
                         </h3>
 
                         {!isLocked && (

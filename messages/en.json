@@ -20,7 +20,15 @@
     "Stories": {
         "title": "Select a Story",
         "locked": "Locked",
-        "play": "Play"
+        "play": "Play",
+        "list": {
+            "1": "The Vanishing Detective",
+            "2": "A Study in Cyan",
+            "3": "The Hound of Silicon Valley",
+            "4": "Sign of the Four Bytes",
+            "5": "The Final Variable",
+            "6": "The Empty Server"
+        }
     },
     "Game": {
         "upgradePrompt": "Upgrade to reveal answers and gain more hints!",

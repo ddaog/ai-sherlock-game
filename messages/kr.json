@@ -20,7 +20,15 @@
     "Stories": {
         "title": "스토리 선택",
         "locked": "잠김",
-        "play": "플레이"
+        "play": "플레이",
+        "list": {
+            "1": "사라진 탐정 (The Vanishing Detective)",
+            "2": "어느 청색증에 대한 연구 (A Study in Cyan)",
+            "3": "실리콘 밸리의 사냥개 (The Hound of Silicon Valley)",
+            "4": "네 개의 바이트 서명 (Sign of the Four Bytes)",
+            "5": "마지막 변수 (The Final Variable)",
+            "6": "빈 서버 (The Empty Server)"
+        }
     },
     "Game": {
         "upgradePrompt": "답변을 확인하고 더 많은 힌트를 얻으려면 업그레이드하세요!",
