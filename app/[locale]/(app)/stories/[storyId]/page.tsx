@@ -183,8 +183,9 @@ export default function StoryPlayPage() {
     const [isPremium, setIsPremium] = useState(false);
     const [isCheckingEntitlements, setIsCheckingEntitlements] = useState(true);
 
-    const { tokens, isDebugMode, isLoaded: isTokenLoaded, decreaseToken, setTokensForDebug } = useTokenSystem(userId);
+    const { tokens, adsWatched, isDebugMode, isLoaded: isTokenLoaded, decreaseToken, setTokensForDebug, claimAdReward } = useTokenSystem(userId);
     const [queriesClickCount, setQueriesClickCount] = useState(0);
+    const [isWatchingAd, setIsWatchingAd] = useState(false);
 
     const actualQueriesLeft = isPremium || isDebugMode ? Infinity : tokens;
     const showPaywall = !isCheckingEntitlements && isTokenLoaded && ((storyId !== '1' && !isPremium && !isDebugMode) || actualQueriesLeft <= 0);
@@ -260,6 +261,21 @@ export default function StoryPlayPage() {
         }
 
         window.location.href = `/api/checkout?products=${productId}&customerExternalId=${userId}`;
+    };
+
+    const handleWatchAd = () => {
+        if (adsWatched >= 3) return;
+        setIsWatchingAd(true);
+        // Simulate ad watching for 2 seconds
+        setTimeout(() => {
+            const success = claimAdReward();
+            if (success) {
+                setIsWatchingAd(false);
+            } else {
+                alert("일일 광고 시청 횟수(3회)를 초과했습니다.");
+                setIsWatchingAd(false);
+            }
+        }, 2000);
     };
 
     const handleSubmit = async () => {
@@ -637,6 +653,22 @@ export default function StoryPlayPage() {
                             </p>
 
                             <div className="w-full flex flex-col gap-3 font-mono text-[12px] tracking-widest uppercase font-bold">
+                                {adsWatched < 3 && (
+                                    <button
+                                        onClick={handleWatchAd}
+                                        disabled={isWatchingAd}
+                                        className="w-full py-4 bg-[#ffcc00] text-black hover:bg-[#ffcc00]/90 transition-colors shadow-lg rounded-sm flex justify-center items-center mb-2 disabled:opacity-50"
+                                    >
+                                        {isWatchingAd ? (
+                                            <span className="flex items-center gap-2">
+                                                <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                                                WATCHING AD...
+                                            </span>
+                                        ) : (
+                                            <span>WATCH AD FOR +20 QUERIES ({adsWatched}/3)</span>
+                                        )}
+                                    </button>
+                                )}
                                 <button onClick={() => handlePaywallUpgrade('lestrade')} className="w-full py-3 px-4 bg-archive-surface text-archive-text border border-archive-border hover:bg-archive-accent/10 transition-colors rounded-sm flex justify-between items-center">
                                     <span>Lestrade Plan</span>
                                     <span className="text-archive-accent">$4.99</span>
