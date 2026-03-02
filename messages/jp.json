@@ -15,6 +15,9 @@
         "mobileNotice": "このゲームはPC環境に最適化されています。"
     },
     "Auth": {
+        "welcomeTitle": "ようこそ、探偵",
+        "welcomeDesc": "事件ファイルにアクセスし、捜査を続けるにはログインしてください。",
+        "authFailed": "認証に失敗しました。もう一度お試しください。",
         "loginWithGoogle": "Googleで続ける",
         "continueAsGuest": "ゲストとして続ける"
     },

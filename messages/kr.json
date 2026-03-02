@@ -15,6 +15,9 @@
         "mobileNotice": "이 게임은 PC 환경에 최적화되어 있습니다."
     },
     "Auth": {
+        "welcomeTitle": "환영합니다, 탐정님",
+        "welcomeDesc": "사건 파일에 접근하고 수사를 계속하려면 로그인하세요.",
+        "authFailed": "인증에 실패했습니다. 다시 시도해 주세요.",
         "loginWithGoogle": "Google로 계속하기",
         "continueAsGuest": "게스트로 시작하기"
     },

@@ -34,17 +34,17 @@ function LoginContent() {
                     </div>
 
                     <h2 className="text-2xl font-black tracking-widest text-archive-text uppercase font-mono drop-shadow-[0_0_10px_rgba(245,245,245,0.2)]">
-                        Welcome Detective
+                        {t('welcomeTitle')}
                     </h2>
 
                     <p className="text-archive-muted-deep text-[14px] leading-relaxed font-sans">
-                        Sign in to access your case files and continue your investigation.
+                        {t('welcomeDesc')}
                     </p>
 
                     {errorMsg && (
                         <div className="w-full p-4 bg-archive-accent/10 border border-archive-accent/50 text-archive-accent text-[13px] font-mono rounded-sm flex items-center gap-3 text-left shadow-[0_0_10px_rgba(173,0,0,0.2)]">
                             <AlertCircle className="w-5 h-5 shrink-0" />
-                            <span>Authentication failed. Please try again.</span>
+                            <span>{t('authFailed')}</span>
                         </div>
                     )}
 

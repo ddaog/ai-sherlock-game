@@ -15,6 +15,9 @@
         "mobileNotice": "This game is optimized for PC environments."
     },
     "Auth": {
+        "welcomeTitle": "Welcome Detective",
+        "welcomeDesc": "Sign in to access your case files and continue your investigation.",
+        "authFailed": "Authentication failed. Please try again.",
         "loginWithGoogle": "Continue with Google",
         "continueAsGuest": "Continue as Guest"
     },
