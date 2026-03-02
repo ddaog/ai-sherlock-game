@@ -41,8 +41,8 @@ export const STORIES_REGISTRY: Record<string, StoryEntry> = {
     '3': {
         id: '3',
         isFree: false,
-        asyncGetConfig: async () => (await import('@/data/stories/1/config')).CASE_CONFIG, // fallback for now
-        asyncGetDisplay: async () => await import('@/data/stories/1/display'), // fallback for now
+        asyncGetConfig: async () => (await import('@/data/stories/3/config')).CASE_CONFIG,
+        asyncGetDisplay: async () => await import('@/data/stories/3/display'),
     },
     '4': {
         id: '4',
