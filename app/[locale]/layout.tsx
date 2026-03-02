@@ -3,7 +3,6 @@ import { getMessages } from 'next-intl/server';
 import { routing } from '@/lib/i18n/routing';
 import { notFound } from 'next/navigation';
 import { Nanum_Myeongjo, JetBrains_Mono } from 'next/font/google';
-import Script from 'next/script';
 import "../globals.css";
 
 const nanumMyeongjo = Nanum_Myeongjo({
@@ -41,12 +40,8 @@ export default async function LocaleLayout({
     return (
         <html lang={locale} className={`${nanumMyeongjo.variable} ${jetBrainsMono.variable}`}>
             <head>
-                <Script
-                    async
-                    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5891083791167051"
-                    crossOrigin="anonymous"
-                    strategy="afterInteractive"
-                />
+                <meta name="google-adsense-account" content="ca-pub-5891083791167051" />
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5891083791167051" crossOrigin="anonymous"></script>
             </head>
             <body className="bg-archive-bg text-archive-text h-dvh w-full overflow-hidden font-serif antialiased scanlines">
                 <NextIntlClientProvider messages={messages}>
