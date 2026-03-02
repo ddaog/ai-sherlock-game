@@ -12,7 +12,12 @@ export function useTokenSystem(userId: string | undefined) {
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!userId) {
+            // Guest Flow: Initial Tokens loaded to React State, unmanipulatable by local storage edit
+            setTokens(33);
+            setIsLoaded(true);
+            return;
+        }
 
         const checkTokens = () => {
             const tokenKey = `sherlock_tokens_${userId}`;
@@ -80,13 +85,14 @@ export function useTokenSystem(userId: string | undefined) {
     }, [userId]);
 
     const decreaseToken = useCallback(() => {
-        if (!userId) return false;
         if (isDebugMode) return true;
 
         if (tokens > 0) {
             const newTokens = tokens - 1;
             setTokens(newTokens);
-            localStorage.setItem(`sherlock_tokens_${userId}`, String(newTokens));
+            if (userId) {
+                localStorage.setItem(`sherlock_tokens_${userId}`, String(newTokens));
+            }
             return true;
         }
         return false;

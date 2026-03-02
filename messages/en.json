@@ -15,7 +15,8 @@
         "mobileNotice": "This game is optimized for PC environments."
     },
     "Auth": {
-        "loginWithGoogle": "Continue with Google"
+        "loginWithGoogle": "Continue with Google",
+        "continueAsGuest": "Continue as Guest"
     },
     "Stories": {
         "title": "Select a Story",
@@ -31,8 +32,16 @@
         }
     },
     "Game": {
-        "upgradePrompt": "Upgrade to reveal answers and gain more hints!",
         "hint": "Use Hint",
-        "remainingHints": "Hints left: {count}"
+        "remainingHints": "Hints left: {count}",
+        "restrictedAccess": "Restricted Access",
+        "exhaustedQueries": "You have exhausted your free queries for this story.",
+        "higherClearance": "This case file requires higher clearance.",
+        "upgradePrompt": "Upgrade your plan to continue the investigation.",
+        "watchAdForQueries": "WATCH AD FOR +20 QUERIES ({watched}/{max})",
+        "watchingAd": "WATCHING AD...",
+        "loginRequiredForAd": "Please login to watch ads and earn tokens.",
+        "adLimitReached": "You have reached the daily ad limit (3).",
+        "searchingLogs": "Searching logs..."
     }
 }

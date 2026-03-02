@@ -2,14 +2,15 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useTranslations } from 'next-intl';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, ArrowRight } from 'lucide-react';
 import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 function LoginContent() {
     const t = useTranslations('Auth');
     const supabase = createClient();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const errorMsg = searchParams.get('error');
     const [loading, setLoading] = useState(false);
 
@@ -63,6 +64,14 @@ function LoginContent() {
                             </svg>
                         )}
                         {t('loginWithGoogle')}
+                    </button>
+
+                    <button
+                        onClick={() => router.push('/stories')}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-transparent hover:bg-archive-surface transition-all rounded-sm border border-archive-border-subtle hover:border-archive-border text-archive-muted-deep hover:text-archive-text font-mono text-[14px] tracking-widest uppercase"
+                    >
+                        {t('continueAsGuest')}
+                        <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
             </div>

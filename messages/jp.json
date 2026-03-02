@@ -15,7 +15,8 @@
         "mobileNotice": "このゲームはPC環境に最適化されています。"
     },
     "Auth": {
-        "loginWithGoogle": "Googleで続ける"
+        "loginWithGoogle": "Googleで続ける",
+        "continueAsGuest": "ゲストとして続ける"
     },
     "Stories": {
         "title": "ストーリーを選択",
@@ -31,8 +32,16 @@
         }
     },
     "Game": {
-        "upgradePrompt": "回答を表示してヒントをさらに増やすにはアップグレードしてください！",
         "hint": "ヒントを使う",
-        "remainingHints": "残りヒント: {count}"
+        "remainingHints": "残りヒント: {count}",
+        "restrictedAccess": "アクセス制限",
+        "exhaustedQueries": "このストーリーの無料クエリ制限に達しました。",
+        "higherClearance": "この事件ファイルは上位のアクセス権が必要です。",
+        "upgradePrompt": "調査を続けるにはプランをアップグレードしてください。",
+        "watchAdForQueries": "広告を見て20クエリを獲得 ({watched}/{max})",
+        "watchingAd": "広告表示中...",
+        "loginRequiredForAd": "広告報酬を受け取るにはログインしてください。",
+        "adLimitReached": "1日の視聴制限(3回)に達しました。",
+        "searchingLogs": "ログを検索中..."
     }
 }

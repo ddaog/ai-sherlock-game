@@ -264,6 +264,10 @@ export default function StoryPlayPage() {
     };
 
     const handleWatchAd = () => {
+        if (!userId) {
+            alert(t('loginRequiredForAd'));
+            return;
+        }
         if (adsWatched >= 3) return;
         setIsWatchingAd(true);
         // Simulate ad watching for 2 seconds
@@ -272,7 +276,7 @@ export default function StoryPlayPage() {
             if (success) {
                 setIsWatchingAd(false);
             } else {
-                alert("일일 광고 시청 횟수(3회)를 초과했습니다.");
+                alert(t('adLimitReached'));
                 setIsWatchingAd(false);
             }
         }, 2000);
@@ -632,7 +636,7 @@ export default function StoryPlayPage() {
                     {loading && (
                         <div className="flex justify-start animate-fade-in px-5 py-2">
                             <p className="text-archive-accent/80 text-[13px] font-mono tracking-widest flex items-center gap-3 uppercase">
-                                <span className="w-1.5 h-3.5 bg-archive-accent caret-blink inline-block"></span> 기록 조회 중 ...
+                                <span className="w-1.5 h-3.5 bg-archive-accent caret-blink inline-block"></span> {t('searchingLogs')}
                             </p>
                         </div>
                     )}
@@ -646,9 +650,9 @@ export default function StoryPlayPage() {
                             <div className="w-12 h-12 bg-archive-accent/10 border border-archive-accent/20 rounded-full flex items-center justify-center mb-5">
                                 <Lock className="w-5 h-5 text-archive-accent" />
                             </div>
-                            <h3 className="font-bold text-[15px] font-mono tracking-widest text-archive-text uppercase mb-3">Restricted Access</h3>
+                            <h3 className="font-bold text-[15px] font-mono tracking-widest text-archive-text uppercase mb-3">{t('restrictedAccess')}</h3>
                             <p className="text-[13px] text-archive-muted mb-8 px-2 leading-relaxed">
-                                {storyId === '1' ? "You have exhausted your free queries for this story. " : "This case file requires higher clearance. "}
+                                {storyId === '1' ? t('exhaustedQueries') + " " : t('higherClearance') + " "}
                                 {t('upgradePrompt')}
                             </p>
 
@@ -662,10 +666,10 @@ export default function StoryPlayPage() {
                                         {isWatchingAd ? (
                                             <span className="flex items-center gap-2">
                                                 <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                                                WATCHING AD...
+                                                {t('watchingAd')}
                                             </span>
                                         ) : (
-                                            <span>WATCH AD FOR +20 QUERIES ({adsWatched}/3)</span>
+                                            <span>{t('watchAdForQueries', { watched: adsWatched, max: 3 })}</span>
                                         )}
                                     </button>
                                 )}
