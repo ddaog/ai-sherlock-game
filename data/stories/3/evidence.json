@@ -1,5 +1,5 @@
-{
-    "1": {
+[
+    {
         "id": "1",
         "storyId": "3",
         "category": "personal_location",
@@ -10,7 +10,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "2": {
+    {
         "id": "2",
         "storyId": "3",
         "category": "personal_location",
@@ -21,7 +21,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "3": {
+    {
         "id": "3",
         "storyId": "3",
         "category": "personal_location",
@@ -32,7 +32,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "4": {
+    {
         "id": "4",
         "storyId": "3",
         "category": "personal_location",
@@ -43,7 +43,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "5": {
+    {
         "id": "5",
         "storyId": "3",
         "category": "personal_location",
@@ -54,7 +54,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "6": {
+    {
         "id": "6",
         "storyId": "3",
         "category": "personal_location",
@@ -65,7 +65,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "7": {
+    {
         "id": "7",
         "storyId": "3",
         "category": "personal_location",
@@ -76,7 +76,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "8": {
+    {
         "id": "8",
         "storyId": "3",
         "category": "personal_location",
@@ -87,7 +87,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "9": {
+    {
         "id": "9",
         "storyId": "3",
         "category": "personal_location",
@@ -98,7 +98,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "10": {
+    {
         "id": "10",
         "storyId": "3",
         "category": "personal_location",
@@ -109,7 +109,7 @@
         "isUnlocked": false,
         "type": "개인_장소"
     },
-    "11": {
+    {
         "id": "11",
         "storyId": "3",
         "category": "core_clue",
@@ -120,7 +120,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "12": {
+    {
         "id": "12",
         "storyId": "3",
         "category": "core_clue",
@@ -131,7 +131,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "13": {
+    {
         "id": "13",
         "storyId": "3",
         "category": "core_clue",
@@ -142,7 +142,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "14": {
+    {
         "id": "14",
         "storyId": "3",
         "category": "core_clue",
@@ -153,7 +153,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "15": {
+    {
         "id": "15",
         "storyId": "3",
         "category": "core_clue",
@@ -164,7 +164,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "16": {
+    {
         "id": "16",
         "storyId": "3",
         "category": "core_clue",
@@ -175,7 +175,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "17": {
+    {
         "id": "17",
         "storyId": "3",
         "category": "core_clue",
@@ -186,7 +186,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "18": {
+    {
         "id": "18",
         "storyId": "3",
         "category": "core_clue",
@@ -197,7 +197,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "19": {
+    {
         "id": "19",
         "storyId": "3",
         "category": "core_clue",
@@ -208,7 +208,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "20": {
+    {
         "id": "20",
         "storyId": "3",
         "category": "core_clue",
@@ -219,7 +219,7 @@
         "isUnlocked": false,
         "type": "핵심_단서"
     },
-    "21": {
+    {
         "id": "21",
         "storyId": "3",
         "category": "indirect_clue",
@@ -230,7 +230,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "22": {
+    {
         "id": "22",
         "storyId": "3",
         "category": "indirect_clue",
@@ -241,7 +241,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "23": {
+    {
         "id": "23",
         "storyId": "3",
         "category": "indirect_clue",
@@ -252,7 +252,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "24": {
+    {
         "id": "24",
         "storyId": "3",
         "category": "indirect_clue",
@@ -263,7 +263,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "25": {
+    {
         "id": "25",
         "storyId": "3",
         "category": "indirect_clue",
@@ -274,7 +274,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "26": {
+    {
         "id": "26",
         "storyId": "3",
         "category": "indirect_clue",
@@ -285,7 +285,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "27": {
+    {
         "id": "27",
         "storyId": "3",
         "category": "indirect_clue",
@@ -296,7 +296,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "28": {
+    {
         "id": "28",
         "category": "indirect_clue",
         "storyId": "3",
@@ -307,7 +307,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "29": {
+    {
         "id": "29",
         "storyId": "3",
         "category": "indirect_clue",
@@ -318,7 +318,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "30": {
+    {
         "id": "30",
         "storyId": "3",
         "category": "indirect_clue",
@@ -329,7 +329,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "31": {
+    {
         "id": "31",
         "storyId": "3",
         "category": "indirect_clue",
@@ -340,7 +340,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "32": {
+    {
         "id": "32",
         "storyId": "3",
         "category": "indirect_clue",
@@ -351,7 +351,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "33": {
+    {
         "id": "33",
         "storyId": "3",
         "category": "indirect_clue",
@@ -362,7 +362,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "34": {
+    {
         "id": "34",
         "storyId": "3",
         "category": "indirect_clue",
@@ -373,7 +373,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "35": {
+    {
         "id": "35",
         "storyId": "3",
         "category": "indirect_clue",
@@ -384,7 +384,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "36": {
+    {
         "id": "36",
         "storyId": "3",
         "category": "indirect_clue",
@@ -395,7 +395,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "37": {
+    {
         "id": "37",
         "storyId": "3",
         "category": "indirect_clue",
@@ -406,7 +406,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "38": {
+    {
         "id": "38",
         "storyId": "3",
         "category": "indirect_clue",
@@ -417,7 +417,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "39": {
+    {
         "id": "39",
         "storyId": "3",
         "category": "indirect_clue",
@@ -428,7 +428,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "40": {
+    {
         "id": "40",
         "storyId": "3",
         "category": "indirect_clue",
@@ -439,7 +439,7 @@
         "isUnlocked": false,
         "type": "간접_단서"
     },
-    "41": {
+    {
         "id": "41",
         "storyId": "3",
         "category": "misleading_clue",
@@ -450,7 +450,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "42": {
+    {
         "id": "42",
         "storyId": "3",
         "category": "misleading_clue",
@@ -461,7 +461,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "43": {
+    {
         "id": "43",
         "storyId": "3",
         "category": "misleading_clue",
@@ -472,7 +472,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "44": {
+    {
         "id": "44",
         "storyId": "3",
         "category": "misleading_clue",
@@ -483,7 +483,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "45": {
+    {
         "id": "45",
         "storyId": "3",
         "category": "misleading_clue",
@@ -494,7 +494,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "46": {
+    {
         "id": "46",
         "storyId": "3",
         "category": "misleading_clue",
@@ -505,7 +505,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "47": {
+    {
         "id": "47",
         "storyId": "3",
         "category": "misleading_clue",
@@ -516,7 +516,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "48": {
+    {
         "id": "48",
         "storyId": "3",
         "category": "misleading_clue",
@@ -527,7 +527,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "49": {
+    {
         "id": "49",
         "storyId": "3",
         "category": "misleading_clue",
@@ -538,7 +538,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "50": {
+    {
         "id": "50",
         "storyId": "3",
         "category": "misleading_clue",
@@ -549,7 +549,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "51": {
+    {
         "id": "51",
         "storyId": "3",
         "category": "misleading_clue",
@@ -560,7 +560,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "52": {
+    {
         "id": "52",
         "storyId": "3",
         "category": "misleading_clue",
@@ -571,7 +571,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "53": {
+    {
         "id": "53",
         "storyId": "3",
         "category": "misleading_clue",
@@ -582,7 +582,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "54": {
+    {
         "id": "54",
         "storyId": "3",
         "category": "misleading_clue",
@@ -593,7 +593,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "55": {
+    {
         "id": "55",
         "storyId": "3",
         "category": "misleading_clue",
@@ -604,7 +604,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "56": {
+    {
         "id": "56",
         "storyId": "3",
         "category": "misleading_clue",
@@ -615,7 +615,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "57": {
+    {
         "id": "57",
         "storyId": "3",
         "category": "misleading_clue",
@@ -626,7 +626,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "58": {
+    {
         "id": "58",
         "storyId": "3",
         "category": "misleading_clue",
@@ -637,7 +637,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "59": {
+    {
         "id": "59",
         "storyId": "3",
         "category": "misleading_clue",
@@ -648,7 +648,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "60": {
+    {
         "id": "60",
         "storyId": "3",
         "category": "misleading_clue",
@@ -659,7 +659,7 @@
         "isUnlocked": false,
         "type": "오해_유도_단서"
     },
-    "61": {
+    {
         "id": "61",
         "storyId": "3",
         "category": "verification_clue",
@@ -670,7 +670,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "62": {
+    {
         "id": "62",
         "storyId": "3",
         "category": "verification_clue",
@@ -681,7 +681,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "63": {
+    {
         "id": "63",
         "storyId": "3",
         "category": "verification_clue",
@@ -692,7 +692,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "64": {
+    {
         "id": "64",
         "storyId": "3",
         "category": "verification_clue",
@@ -703,7 +703,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "65": {
+    {
         "id": "65",
         "storyId": "3",
         "category": "verification_clue",
@@ -714,7 +714,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "66": {
+    {
         "id": "66",
         "storyId": "3",
         "category": "verification_clue",
@@ -725,7 +725,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "67": {
+    {
         "id": "67",
         "storyId": "3",
         "category": "verification_clue",
@@ -736,7 +736,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "68": {
+    {
         "id": "68",
         "storyId": "3",
         "category": "verification_clue",
@@ -747,7 +747,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "69": {
+    {
         "id": "69",
         "storyId": "3",
         "category": "verification_clue",
@@ -758,7 +758,7 @@
         "isUnlocked": false,
         "type": "검증_단서"
     },
-    "70": {
+    {
         "id": "70",
         "storyId": "3",
         "category": "verification_clue",
@@ -769,4 +769,4 @@
         "isUnlocked": false,
         "type": "검증_단서"
     }
-}
+]
