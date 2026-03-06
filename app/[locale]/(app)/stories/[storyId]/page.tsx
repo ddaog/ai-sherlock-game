@@ -160,8 +160,8 @@ export default function StoryPlayPage() {
     const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
     const [isSynopsisOpen, setIsSynopsisOpen] = useState(true);
 
-    // Solve Form States
-    const [isSolveModalOpen, setIsSolveModalOpen] = useState(false);
+    // Solve Form States (Terminal Style)
+    const [solveStep, setSolveStep] = useState<0 | 1 | 2 | 3>(0);
     const [solveForm, setSolveForm] = useState({ culprit: '', motive: '', method: '' });
 
     const prevMessagesLength = useRef(0);
@@ -323,7 +323,8 @@ export default function StoryPlayPage() {
         }
 
         if (trimmed === "/추리" || trimmed.startsWith("/추리 ")) {
-            setIsSolveModalOpen(true);
+            setSolveStep(1);
+            setSolveForm({ culprit: '', motive: '', method: '' });
             setInput("");
             setShowCommandPalette(false);
             return;
@@ -429,7 +430,7 @@ export default function StoryPlayPage() {
 
         const combinedQuery = `/추리 [범인] ${solveForm.culprit.trim()} \n[동기] ${solveForm.motive.trim()} \n[방법] ${solveForm.method.trim()}`;
 
-        setIsSolveModalOpen(false);
+        setSolveStep(0);
         setSolveForm({ culprit: '', motive: '', method: '' });
 
         // Directly process as a normal submit with the combined query
@@ -755,6 +756,130 @@ export default function StoryPlayPage() {
                         </div>
                     ))}
 
+                    {solveStep > 0 && (
+                        <div className="flex justify-start animate-fade-in w-full">
+                            <div className="max-w-[95%] w-full rounded-sm border border-archive-accent bg-black/60 p-6 font-mono space-y-6 relative overflow-hidden shadow-[0_0_20px_rgba(255,204,0,0.05)]">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-archive-accent"></div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-archive-accent text-[12px] font-bold tracking-[0.2em] uppercase">
+                                        &gt; CASE_CONCLUSION_REPORT_V1.0
+                                    </h3>
+                                    <button
+                                        onClick={() => setSolveStep(0)}
+                                        className="text-archive-muted-deep hover:text-archive-accent text-[10px] tracking-widest uppercase transition-colors"
+                                    >
+                                        [ESC] EXIT
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Step 1: Culprit */}
+                                    <div className={`transition-opacity duration-300 ${solveStep >= 1 ? 'opacity-100' : 'opacity-20'}`}>
+                                        <div className="flex items-center gap-3 text-[13px] mb-2 font-bold">
+                                            <span className="text-archive-accent">STEP_01</span>
+                                            <span className="text-archive-text">범인 (CULPRIT)</span>
+                                        </div>
+                                        {solveStep === 1 ? (
+                                            <div className="flex items-center gap-2 bg-archive-surface/40 p-3 border-l border-archive-accent/50 group focus-within:bg-archive-accent/5 transition-all">
+                                                <span className="text-archive-accent animate-pulse">&gt;</span>
+                                                <input
+                                                    autoFocus
+                                                    className="bg-transparent border-none outline-none text-white w-full placeholder:text-archive-muted-deep/50 text-[14px]"
+                                                    placeholder="ENTITY_NAME..."
+                                                    value={solveForm.culprit}
+                                                    onChange={(e) => setSolveForm(f => ({ ...f, culprit: e.target.value }))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && solveForm.culprit.trim()) setSolveStep(2);
+                                                        if (e.key === 'Escape') setSolveStep(0);
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="text-archive-accent p-3 font-bold border-l border-archive-accent/20 bg-archive-accent/5 text-[14px]">
+                                                {solveForm.culprit}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Step 2: Motive */}
+                                    <div className={`transition-opacity duration-300 ${solveStep >= 2 ? 'opacity-100' : 'opacity-0'}`}>
+                                        <div className="flex items-center gap-3 text-[13px] mb-2 font-bold">
+                                            <span className="text-archive-accent">STEP_02</span>
+                                            <span className="text-archive-text">범행 동기 (MOTIVE)</span>
+                                        </div>
+                                        {solveStep === 2 ? (
+                                            <div className="flex items-start gap-2 bg-archive-surface/40 p-3 border-l border-archive-accent/50 focus-within:bg-archive-accent/5 transition-all">
+                                                <span className="text-archive-accent animate-pulse mt-1">&gt;</span>
+                                                <textarea
+                                                    autoFocus
+                                                    className="bg-transparent border-none outline-none text-white w-full h-24 resize-none placeholder:text-archive-muted-deep/50 text-[14px] leading-relaxed"
+                                                    placeholder="REASONING_AND_LOGIC..."
+                                                    value={solveForm.motive}
+                                                    onChange={(e) => setSolveForm(f => ({ ...f, motive: e.target.value }))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey && solveForm.motive.trim()) {
+                                                            e.preventDefault();
+                                                            setSolveStep(3);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : solveStep > 2 ? (
+                                            <div className="text-archive-accent p-3 font-bold border-l border-archive-accent/20 bg-archive-accent/5 text-[14px] whitespace-pre-wrap leading-relaxed">
+                                                {solveForm.motive}
+                                            </div>
+                                        ) : null}
+                                    </div>
+
+                                    {/* Step 3: Method */}
+                                    <div className={`transition-opacity duration-300 ${solveStep >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+                                        <div className="flex items-center gap-3 text-[13px] mb-2 font-bold">
+                                            <span className="text-archive-accent">STEP_03</span>
+                                            <span className="text-archive-text">범행 방법 (METHOD)</span>
+                                        </div>
+                                        {solveStep === 3 ? (
+                                            <div className="flex flex-col gap-4">
+                                                <div className="flex items-start gap-2 bg-archive-surface/40 p-3 border-l border-archive-accent/50 focus-within:bg-archive-accent/5 transition-all">
+                                                    <span className="text-archive-accent animate-pulse mt-1">&gt;</span>
+                                                    <textarea
+                                                        autoFocus
+                                                        className="bg-transparent border-none outline-none text-white w-full h-24 resize-none placeholder:text-archive-muted-deep/50 text-[14px] leading-relaxed"
+                                                        placeholder="EXECUTION_DETAILS..."
+                                                        value={solveForm.method}
+                                                        onChange={(e) => setSolveForm(f => ({ ...f, method: e.target.value }))}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey && solveForm.method.trim()) {
+                                                                e.preventDefault();
+                                                                handleSolveSubmit();
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <button
+                                                        onClick={handleSolveSubmit}
+                                                        disabled={!solveForm.method.trim()}
+                                                        className="flex-1 bg-archive-accent text-black font-bold py-3 text-[12px] tracking-[0.2em] hover:bg-white transition-all disabled:opacity-30 disabled:grayscale uppercase"
+                                                    >
+                                                        Finalize Submission
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 pt-4 border-t border-archive-border/50 text-[10px] text-archive-muted-deep font-mono flex items-center gap-4">
+                                    <span className="flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> SYSTEM_READY
+                                    </span>
+                                    <span>ENCRYPTION: AES-256</span>
+                                    {solveStep < 3 && <span className="animate-fade-in italic">Enter를 눌러 다음 단계로 진행하세요.</span>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {loading && (
                         <div className="flex justify-start animate-fade-in px-5 py-2">
                             <p className="text-archive-accent/80 text-[13px] font-mono tracking-widest flex items-center gap-3 uppercase">
@@ -920,80 +1045,6 @@ export default function StoryPlayPage() {
                     )}
                 </div>
             </div>
-
-            {/* Solve Form Modal */}
-            {isSolveModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-lg bg-[#141414] border border-archive-accent shadow-2xl rounded-sm p-6 relative">
-                        {/* Decorative Top Bar */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-archive-accent"></div>
-                        <button
-                            onClick={() => setIsSolveModalOpen(false)}
-                            className="absolute top-4 right-4 text-archive-muted hover:text-white transition-colors"
-                        >
-                            &times;
-                        </button>
-
-                        <h2 className="text-archive-accent font-bold font-mono text-xl tracking-widest uppercase mb-6 flex items-center gap-2">
-                            <span className="w-2 h-5 bg-archive-accent"></span>
-                            사건 추론 보고서
-                        </h2>
-
-                        <p className="text-[#cccccc] text-sm font-serif mb-6 leading-relaxed">
-                            수집하신 단서와 가설을 바탕으로 사건의 전말을 3가지 핵심 요소로 정리해 제출해 주십시오. (제출 즉시 판정이 시작되며 쿼리 크레딧 1개가 소모됩니다.)
-                        </p>
-
-                        <div className="space-y-4 font-mono text-sm">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-archive-muted-deep text-[11px] font-bold tracking-widest uppercase">[C01] 범인 (Culprit)</label>
-                                <input
-                                    type="text"
-                                    value={solveForm.culprit}
-                                    onChange={(e) => setSolveForm({ ...solveForm, culprit: e.target.value })}
-                                    placeholder="누가 이 사건을 저질렀는가?"
-                                    className="w-full bg-[#1a1a1a] border border-[#333333] px-3 py-2 text-white focus:border-archive-accent focus:outline-none transition-colors rounded-sm placeholder:text-[#555555]"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-archive-muted-deep text-[11px] font-bold tracking-widest uppercase">[M01] 범행 동기 (Motive)</label>
-                                <textarea
-                                    value={solveForm.motive}
-                                    onChange={(e) => setSolveForm({ ...solveForm, motive: e.target.value })}
-                                    placeholder="왜, 어떤 이유로 이런 범행을 계획했는가?"
-                                    className="w-full bg-[#1a1a1a] border border-[#333333] px-3 py-2 text-white focus:border-archive-accent focus:outline-none transition-colors rounded-sm min-h-[80px] placeholder:text-[#555555]"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-archive-muted-deep text-[11px] font-bold tracking-widest uppercase">[M02] 범행 방법 (Method)</label>
-                                <textarea
-                                    value={solveForm.method}
-                                    onChange={(e) => setSolveForm({ ...solveForm, method: e.target.value })}
-                                    placeholder="어떤 수단과 방법을 이용해 완벽한 사인을 만들어 냈는가?"
-                                    className="w-full bg-[#1a1a1a] border border-[#333333] px-3 py-2 text-white focus:border-archive-accent focus:outline-none transition-colors rounded-sm min-h-[80px] placeholder:text-[#555555]"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3 mt-8">
-                            <button
-                                onClick={() => setIsSolveModalOpen(false)}
-                                className="flex-1 px-4 py-3 bg-transparent border border-[#333333] text-archive-muted font-bold font-mono tracking-widest uppercase text-[12px] hover:text-white hover:border-[#666666] transition-colors rounded-sm"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSolveSubmit}
-                                disabled={!solveForm.culprit.trim() || !solveForm.motive.trim() || !solveForm.method.trim()}
-                                className="flex-1 px-4 py-3 bg-archive-accent/20 border border-archive-accent text-archive-accent font-bold font-mono tracking-widest uppercase text-[12px] disabled:opacity-40 disabled:hover:bg-archive-accent/20 hover:bg-archive-accent hover:text-white transition-all rounded-sm shadow-[0_0_10px_rgba(255,204,0,0.1)] hover:shadow-[0_0_20px_rgba(255,204,0,0.3)]"
-                            >
-                                Submit Report
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
