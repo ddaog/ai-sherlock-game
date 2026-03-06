@@ -789,7 +789,11 @@ export default function StoryPlayPage() {
                                                     value={solveForm.culprit}
                                                     onChange={(e) => setSolveForm(f => ({ ...f, culprit: e.target.value }))}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && solveForm.culprit.trim()) setSolveStep(2);
+                                                        if (e.nativeEvent.isComposing) return;
+                                                        if (e.key === 'Enter' && solveForm.culprit.trim()) {
+                                                            e.preventDefault();
+                                                            setSolveStep(2);
+                                                        }
                                                         if (e.key === 'Escape') setSolveStep(0);
                                                     }}
                                                 />
@@ -817,6 +821,7 @@ export default function StoryPlayPage() {
                                                     value={solveForm.motive}
                                                     onChange={(e) => setSolveForm(f => ({ ...f, motive: e.target.value }))}
                                                     onKeyDown={(e) => {
+                                                        if (e.nativeEvent.isComposing) return;
                                                         if (e.key === 'Enter' && !e.shiftKey && solveForm.motive.trim()) {
                                                             e.preventDefault();
                                                             setSolveStep(3);
@@ -848,6 +853,7 @@ export default function StoryPlayPage() {
                                                         value={solveForm.method}
                                                         onChange={(e) => setSolveForm(f => ({ ...f, method: e.target.value }))}
                                                         onKeyDown={(e) => {
+                                                            if (e.nativeEvent.isComposing) return;
                                                             if (e.key === 'Enter' && !e.shiftKey && solveForm.method.trim()) {
                                                                 e.preventDefault();
                                                                 handleSolveSubmit();
