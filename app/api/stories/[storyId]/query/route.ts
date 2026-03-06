@@ -344,6 +344,108 @@ ${config.ending.closedLine}`;
     }
   }
 
+  if (query.trim().startsWith("/추리 ")) {
+    const gameText = query.trim().replace(/^\/추리\s+/i, "").trim();
+
+    if (!gameText) {
+      return NextResponse.json({
+        response: "결론 내용을 입력해 주세요. 예: /추리 박지훈이 감사 발각을 막으려고 약물을 혼입해 범행했다.",
+        sources: [],
+        suggestions: [
+          "'누가/왜/어떻게'를 한 문장으로 정리해 주세요.",
+          "예: 'A가 B 때문에 C로 범행했다.'",
+        ],
+        hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+        seenRecordIds,
+        triggeredBadges,
+        solved: false,
+        sessionState: { solved: false },
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+      });
+    }
+
+    const parse = parseSubmission(gameText, config.parsing, config.solution);
+    const requiredSeen = config.solution.required_records.filter((id) => seenRecordIds.includes(id));
+    const required_ratio =
+      config.solution.required_records.length > 0
+        ? requiredSeen.length / config.solution.required_records.length
+        : 1;
+
+    const grade = gradeSubmission(parse, required_ratio);
+    const solved = isSolved(grade, gameText, parse, config.solution);
+
+    const nq = config.nextQuestions;
+    const nextQuestions: string[] = [];
+    if (nq) {
+      if (!parse.hasMotive && nq.motive.length > 0) nextQuestions.push(nq.motive[0]);
+      if (!parse.hasMethod && nq.method.length > 0) nextQuestions.push(nq.method[0]);
+      if (required_ratio < 0.66) {
+        const unseen = config.solution.required_records.find((id) => !seenRecordIds.includes(id));
+        if (unseen && nq.requiredRecordHint[unseen]) nextQuestions.push(nq.requiredRecordHint[unseen]);
+      }
+      if (nextQuestions.length < 2 && nq.crossCheck.length > 0) nextQuestions.push(nq.crossCheck[0]);
+    }
+    let finalNext = nextQuestions.slice(0, 2);
+    if (finalNext.length === 0) {
+      finalNext = ["21:10~21:20 3층 CCTV 기록은?", "감사 관련 이메일 내용은?"];
+    }
+
+    const contentIsGood =
+      parse.suspectMentioned &&
+      parse.hasMotive &&
+      parse.hasMethod &&
+      parse.motiveHits >= 1 &&
+      parse.methodHits >= 1;
+
+    let message = "";
+    if (grade === "A" && solved) {
+      message = "사건 해결. 제출한 결론은 사건 기록과 일치합니다.";
+    } else if (grade === "A") {
+      message = "결론은 기록과 높은 정합성을 보입니다. 다만 핵심 인물 또는 연쇄를 한 번 더 점검해 보세요.";
+    } else if (grade === "B" || contentIsGood) {
+      message = "가능성은 있지만 근거가 아직 덜 모였습니다. 핵심 기록을 더 조회해 보세요.";
+    } else {
+      message = "'누가/왜/어떻게'를 한 문장으로 정리해 주세요. 예: 'A가 B 때문에 C로 범행했다.'";
+    }
+
+    let responseText = `[REPORT]
+GRADE: ${grade}
+STATUS: ${solved ? "SOLVED" : "NOT_SOLVED"}
+
+[SYSTEM]
+MESSAGE: ${message}`;
+
+    if (!solved) {
+      responseText += `
+
+NEXT:
+${finalNext.map((q) => `- ${q}`).join("\n")}`;
+    }
+
+    if (solved) {
+      responseText += `
+
+[END_LOG]
+${config.ending.solvedTitle}
+${config.ending.solvedSummaryLines.map((l) => `- ${l}`).join("\n")}
+${config.ending.closedLine}`;
+    }
+
+    return NextResponse.json({
+      response: responseText,
+      sources: [],
+      suggestions: solved ? [] : finalNext,
+      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+      seenRecordIds,
+      triggeredBadges,
+      solved,
+      sessionState: solved
+        ? { solved: true, solvedAt: new Date().toISOString() }
+        : { solved: false },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+    });
+  }
+
   const guard = validateQuery(query);
   if (!guard.ok) {
     return NextResponse.json({
@@ -472,108 +574,6 @@ ${config.ending.closedLine}`;
       triggeredBadges,
       solved: false,
       sessionState: { solved: false },
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
-    });
-  }
-
-  if (query.trim().startsWith("/추리 ")) {
-    const gameText = query.trim().replace(/^\/추리\s+/i, "").trim();
-
-    if (!gameText) {
-      return NextResponse.json({
-        response: "결론 내용을 입력해 주세요. 예: /추리 박지훈이 감사 발각을 막으려고 약물을 혼입해 범행했다.",
-        sources: [],
-        suggestions: [
-          "'누가/왜/어떻게'를 한 문장으로 정리해 주세요.",
-          "예: 'A가 B 때문에 C로 범행했다.'",
-        ],
-        hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
-        seenRecordIds,
-        triggeredBadges,
-        solved: false,
-        sessionState: { solved: false },
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
-      });
-    }
-
-    const parse = parseSubmission(gameText, config.parsing, config.solution);
-    const requiredSeen = config.solution.required_records.filter((id) => seenRecordIds.includes(id));
-    const required_ratio =
-      config.solution.required_records.length > 0
-        ? requiredSeen.length / config.solution.required_records.length
-        : 1;
-
-    const grade = gradeSubmission(parse, required_ratio);
-    const solved = isSolved(grade, gameText, parse, config.solution);
-
-    const nq = config.nextQuestions;
-    const nextQuestions: string[] = [];
-    if (nq) {
-      if (!parse.hasMotive && nq.motive.length > 0) nextQuestions.push(nq.motive[0]);
-      if (!parse.hasMethod && nq.method.length > 0) nextQuestions.push(nq.method[0]);
-      if (required_ratio < 0.66) {
-        const unseen = config.solution.required_records.find((id) => !seenRecordIds.includes(id));
-        if (unseen && nq.requiredRecordHint[unseen]) nextQuestions.push(nq.requiredRecordHint[unseen]);
-      }
-      if (nextQuestions.length < 2 && nq.crossCheck.length > 0) nextQuestions.push(nq.crossCheck[0]);
-    }
-    let finalNext = nextQuestions.slice(0, 2);
-    if (finalNext.length === 0) {
-      finalNext = ["21:10~21:20 3층 CCTV 기록은?", "감사 관련 이메일 내용은?"];
-    }
-
-    const contentIsGood =
-      parse.suspectMentioned &&
-      parse.hasMotive &&
-      parse.hasMethod &&
-      parse.motiveHits >= 1 &&
-      parse.methodHits >= 1;
-
-    let message = "";
-    if (grade === "A" && solved) {
-      message = "사건 해결. 제출한 결론은 사건 기록과 일치합니다.";
-    } else if (grade === "A") {
-      message = "결론은 기록과 높은 정합성을 보입니다. 다만 핵심 인물 또는 연쇄를 한 번 더 점검해 보세요.";
-    } else if (grade === "B" || contentIsGood) {
-      message = "가능성은 있지만 근거가 아직 덜 모였습니다. 핵심 기록을 더 조회해 보세요.";
-    } else {
-      message = "'누가/왜/어떻게'를 한 문장으로 정리해 주세요. 예: 'A가 B 때문에 C로 범행했다.'";
-    }
-
-    let responseText = `[REPORT]
-GRADE: ${grade}
-STATUS: ${solved ? "SOLVED" : "NOT_SOLVED"}
-
-[SYSTEM]
-MESSAGE: ${message}`;
-
-    if (!solved) {
-      responseText += `
-
-NEXT:
-${finalNext.map((q) => `- ${q}`).join("\n")}`;
-    }
-
-    if (solved) {
-      responseText += `
-
-[END_LOG]
-${config.ending.solvedTitle}
-${config.ending.solvedSummaryLines.map((l) => `- ${l}`).join("\n")}
-${config.ending.closedLine}`;
-    }
-
-    return NextResponse.json({
-      response: responseText,
-      sources: [],
-      suggestions: solved ? [] : finalNext,
-      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
-      seenRecordIds,
-      triggeredBadges,
-      solved,
-      sessionState: solved
-        ? { solved: true, solvedAt: new Date().toISOString() }
-        : { solved: false },
       usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
     });
   }
