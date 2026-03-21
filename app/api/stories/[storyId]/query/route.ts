@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { StoryConfig, StoryDisplayConfig } from "@/data/registry";
 import {
   validateQuery,
   isAnswerRequest,
 } from "@/lib/game/guardrails";
 import { getTopKEvidence } from "@/lib/game/embeddings";
 import { chatCompletion } from "@/lib/game/openai";
-import { getStoryConfig, getStoryEvidence } from "@/lib/stories/store";
+import { getStoryConfig, getStoryDisplay, getStoryEvidence } from "@/lib/stories/store";
 import {
   type Hypothesis,
   detectDeleteIntent,
@@ -17,6 +18,10 @@ import {
   nextHypothesisId,
 } from "@/lib/game/hypothesesSimple";
 import { evaluateBadges } from "@/lib/game/badgeEngine";
+import {
+  cleanRecordIdToken,
+  resolveRecordIdsAgainstRecords,
+} from "@/lib/game/recordIds";
 import { parseSubmission } from "@/lib/game/submissionParser";
 import { gradeSubmission, isSolved } from "@/lib/game/grader";
 
@@ -60,7 +65,7 @@ const SYSTEM_PROMPT = `당신은 "사건 기록 시스템 v1.4(Evidence Archive 
 
 ## 출력 포맷 (엄수)
 RESPONSE: <질문에 대한 답변. 2~5문장. 기록 내용을 자연스럽게 인용. 판정/추리 없이 사실만>
-SOURCES: [기록 021], [기록 007]  (인용한 기록 id만, 없으면 생략 가능)
+SOURCES: [기록 021], [기록 e_07]  (인용한 기록 id만, 없으면 생략 가능)
 HYPOTHESIS_IMPACT: H1:support, H2:conflict  (가설이 있을 때만. 해당 없으면 (none))
 SUGGESTION:
 - <다음 질문 후보 1>
@@ -77,16 +82,16 @@ CURRENT_HYPOTHESES에 나열된 가설 중, 이번 인용 기록(SOURCES)이 **�
 ## 오프토픽 질문 시
 RESPONSE: 사건 기록에 해당 요소는 등장하지 않습니다.
 SUGGESTION:
-- 7월 18일 당시 별관 출입 기록은?
-- 피해자 김도윤과 관련된 인물은?
-- CCTV 기록에서 확인된 시간대는?
+- 피해자의 사건 당일 동선은?
+- 현장에 남은 물증은?
+- 사건과 관련된 주요 인물은?
 
 ## 정답/범인 요청 시
 RESPONSE: 본 시스템은 범인을 판정하거나 해설하지 않습니다. 기록을 연결해 스스로 재구성해 주세요.
 SUGGESTION:
-- 21:10~21:20 3층 복도 CCTV 기록은?
-- 박지훈의 7월 18일 행적은?
-- 감사 관련 이메일 내용은?
+- 피해자의 마지막 행적은?
+- 특정 용의자의 사건 당일 움직임은?
+- 사건 동기를 보여주는 문서 기록은?
 
 ## 결론 제출 시
 결론은 /추리 명령으로 제출해야 합니다. 예: /추리 [범인]. [범행 동기]. [범행 수법]
@@ -104,7 +109,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ sto
 
   const { storyId } = await params;
   const config = await getStoryConfig(storyId);
-  if (!config) {
+  const display = await getStoryDisplay(storyId);
+  if (!config || !display) {
     return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
 
@@ -176,16 +182,56 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ sto
   }
 
   const hintCount = Math.min(3, Math.max(0, Number(incomingSession?.hintCount) || 0));
+  const defaultSuggestions = buildLeadSuggestions(config, display, seenRecordIds);
+
+  if (/^\/현장$/i.test(query.trim())) {
+    return NextResponse.json({
+      response: buildSceneResponse(display),
+      sources: [],
+      suggestions: defaultSuggestions,
+      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+      seenRecordIds,
+      triggeredBadges,
+      solved: false,
+      sessionState: { solved: false, hintCount },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+    });
+  }
+
+  if (/^\/인물$/i.test(query.trim())) {
+    return NextResponse.json({
+      response: buildCharacterResponse(display),
+      sources: [],
+      suggestions: defaultSuggestions,
+      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+      seenRecordIds,
+      triggeredBadges,
+      solved: false,
+      sessionState: { solved: false, hintCount },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+    });
+  }
+
+  if (/^\/단서$/i.test(query.trim()) || /^\/진행도$/i.test(query.trim())) {
+    return NextResponse.json({
+      response: buildInvestigationResponse(config, display, seenRecordIds, hypotheses.length),
+      sources: [],
+      suggestions: defaultSuggestions,
+      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+      seenRecordIds,
+      triggeredBadges,
+      solved: false,
+      sessionState: { solved: false, hintCount },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+    });
+  }
 
   if (/^\/포기$/i.test(query.trim())) {
     if (hintCount < 3) {
       return NextResponse.json({
         response: "힌트를 3번 모두 사용한 후에 포기할 수 있습니다.",
         sources: [],
-        suggestions: [
-          "7월 18일 당시 별관 출입 기록은?",
-          "피해자 김도윤과 관련된 인물은?",
-        ],
+        suggestions: defaultSuggestions,
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -221,11 +267,7 @@ ${config.ending.closedLine}`;
       return NextResponse.json({
         response: `힌트는 ${MAX_HINTS}번까지 사용 가능합니다. (${hintCount}/${MAX_HINTS} 사용 완료)\n\n포기하시려면 /포기 를 입력하세요.`,
         sources: [],
-        suggestions: [
-          "/포기",
-          "7월 18일 당시 별관 출입 기록은?",
-          "피해자 김도윤과 관련된 인물은?",
-        ],
+        suggestions: ["/포기", ...defaultSuggestions.slice(0, 2)],
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -235,9 +277,9 @@ ${config.ending.closedLine}`;
       });
     }
     const hints: string[] = [
-      "21시 전후 3층 복도와 집무실의 동선을 추적해 보세요. 누가 언제 출입했는지가 중요합니다.",
-      "김도윤이 쓰러지기 전에 무슨 일이 있었는지, 약물·타격·지문과 관련된 기록을 찾아보세요.",
-      "감사와 비자금, 해외 송금, 보안 USB 같은 키워드로 기록을 검색해 보세요.",
+      display.INVESTIGATION_TRACKS?.[0]?.lead ?? "사건 당일의 동선과 출입 기록부터 정리해 보세요.",
+      display.INVESTIGATION_TRACKS?.[1]?.lead ?? "현장 물증과 직접적인 범행 흔적을 먼저 연결해 보세요.",
+      display.INVESTIGATION_TRACKS?.[2]?.lead ?? "동기와 숨겨진 관계를 보여주는 기록을 찾아보세요.",
     ];
     const requiredHints = config.nextQuestions?.requiredRecordHint
       ? Object.entries(config.nextQuestions.requiredRecordHint).map(([id, q]) => ({ id, q }))
@@ -254,13 +296,9 @@ ${config.ending.closedLine}`;
         : hints[2];
     }
     return NextResponse.json({
-      response: `[힌트 ${hintCount + 1}/${MAX_HINTS}] ${hintText}`,
-      sources: [],
-      suggestions: [
-        "7월 18일 당시 별관 출입 기록은?",
-        "피해자 김도윤과 관련된 인물은?",
-        "CCTV 기록에서 확인된 시간대는?",
-      ],
+        response: `[힌트 ${hintCount + 1}/${MAX_HINTS}] ${hintText}`,
+        sources: [],
+        suggestions: defaultSuggestions,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds,
       triggeredBadges,
@@ -290,10 +328,7 @@ ${config.ending.closedLine}`;
       return NextResponse.json({
         response: `기존 가설을 변경했습니다: "${noteText}"`,
         sources: [],
-        suggestions: [
-          "7월 18일 당시 별관 출입 기록은?",
-          "해당 가설을 뒷받침하는 기록은?",
-        ],
+        suggestions: [...defaultSuggestions.slice(0, 1), "해당 가설을 뒷받침하는 기록은?"],
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -329,10 +364,7 @@ ${config.ending.closedLine}`;
       return NextResponse.json({
         response: `가설로 새로 기록했습니다: "${noteText}"`,
         sources: [],
-        suggestions: [
-          "7월 18일 당시 별관 출입 기록은?",
-          "해당 가설을 뒷받침하는 기록은?",
-        ],
+        suggestions: [...defaultSuggestions.slice(0, 1), "해당 가설을 뒷받침하는 기록은?"],
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -348,7 +380,7 @@ ${config.ending.closedLine}`;
 
     if (!gameText) {
       return NextResponse.json({
-        response: "결론 내용을 입력해 주세요. 예: /추리 박지훈이 감사 발각을 막으려고 약물을 혼입해 범행했다.",
+        response: "결론 내용을 입력해 주세요. 예: /추리 A가 B 때문에 C 방식으로 범행했다.",
         sources: [],
         suggestions: [
           "'누가/왜/어떻게'를 한 문장으로 정리해 주세요.",
@@ -386,7 +418,7 @@ ${config.ending.closedLine}`;
     }
     let finalNext = nextQuestions.slice(0, 2);
     if (finalNext.length === 0) {
-      finalNext = ["21:10~21:20 3층 CCTV 기록은?", "감사 관련 이메일 내용은?"];
+      finalNext = defaultSuggestions.slice(0, 2);
     }
 
     const contentIsGood =
@@ -450,11 +482,7 @@ ${config.ending.closedLine}`;
     return NextResponse.json({
       response: guard.message,
       sources: [],
-      suggestions: [
-        "7월 18일 당시 별관 출입 기록은?",
-        "피해자 김도윤과 관련된 인물은?",
-        "CCTV 기록에서 확인된 시간대는?",
-      ],
+      suggestions: defaultSuggestions,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds,
       triggeredBadges,
@@ -469,11 +497,7 @@ ${config.ending.closedLine}`;
     return NextResponse.json({
       response: "해당 가설을 삭제했습니다.",
       sources: [],
-      suggestions: [
-        "7월 18일 당시 별관 출입 기록은?",
-        "다른 가설을 세워 보시겠어요?",
-        "CCTV 기록에서 확인된 시간대는?",
-      ],
+      suggestions: [...defaultSuggestions.slice(0, 2), "다른 가설을 세워 보시겠어요?"],
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds,
       triggeredBadges,
@@ -487,12 +511,9 @@ ${config.ending.closedLine}`;
     const hypothesisText = extractHypothesisFromQuery(query);
     if (!hypothesisText) {
       return NextResponse.json({
-        response: "가설 내용을 입력해 주세요. 예: /가설 박지훈이 범인인 것 같아",
+        response: "가설 내용을 입력해 주세요. 예: /가설 특정 인물이 사건을 연출했을 가능성이 있어",
         sources: [],
-        suggestions: [
-          "7월 18일 당시 별관 출입 기록은?",
-          "피해자 김도윤과 관련된 인물은?",
-        ],
+        suggestions: defaultSuggestions,
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -505,7 +526,7 @@ ${config.ending.closedLine}`;
       return NextResponse.json({
         response: "가설은 최대 5개까지입니다. 기존 가설을 삭제하거나 변경해 주세요.",
         sources: [],
-        suggestions: ["/삭제 (가설 삭제)", "7월 18일 당시 별관 출입 기록은?"],
+        suggestions: ["/삭제 (가설 삭제)", ...defaultSuggestions.slice(0, 1)],
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -545,10 +566,7 @@ ${config.ending.closedLine}`;
     return NextResponse.json({
       response: `가설로 기록했습니다: "${noteText}"`,
       sources: [],
-      suggestions: [
-        "7월 18일 당시 별관 출입 기록은?",
-        "해당 가설을 뒷받침하는 기록은?",
-      ],
+      suggestions: [...defaultSuggestions.slice(0, 1), "해당 가설을 뒷받침하는 기록은?"],
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds,
       triggeredBadges,
@@ -563,11 +581,7 @@ ${config.ending.closedLine}`;
       response:
         "본 시스템은 범인을 판정하거나 해설하지 않습니다. 기록을 연결해 스스로 재구성해 주세요.",
       sources: [],
-      suggestions: [
-        "21:10~21:20 3층 복도 CCTV 기록은?",
-        "박지훈의 7월 18일 행적은?",
-        "감사 관련 이메일 내용은?",
-      ],
+      suggestions: defaultSuggestions,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds,
       triggeredBadges,
@@ -617,20 +631,21 @@ USER QUERY: ${query}
       parsed = parseResponse(chatResult.content);
     }
 
+    const rawLLM = chatResult.content;
+    const allEvidence = await getStoryEvidence(storyId);
+    const resolvedSourceIds = resolveRecordIdsAgainstRecords(parsed.sources, allEvidence);
+    const resolvedRecordIds = resolveRecordIdsAgainstRecords(parseRecordIdsFromLLM(rawLLM), allEvidence);
+
     if (!parsed.valid) {
       return NextResponse.json({
         response:
           parsed.response ||
           "관련 기록을 조회했습니다. 추가 질문을 통해 조사를 이어가 주세요.",
-        sources: parsed.sources,
+        sources: resolvedSourceIds.length > 0 ? resolvedSourceIds : parsed.sources,
         suggestions:
           parsed.suggestions.length >= 2
             ? parsed.suggestions
-            : [
-              "7월 18일 별관 출입 기록은?",
-              "김도윤과 관련된 인물들의 행적은?",
-              "감사 예정일과 관련된 서류는?",
-            ],
+            : defaultSuggestions,
         hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
         seenRecordIds,
         triggeredBadges,
@@ -639,9 +654,6 @@ USER QUERY: ${query}
         usage: buildUsage(embeddingUsage, chatResult.usage),
       });
     }
-
-    const rawLLM = chatResult.content;
-    const recordIds = parseRecordIdsFromLLM(rawLLM);
 
     const hypothesisImpact = parseHypothesisImpact(rawLLM, hypotheses);
     if (hypothesisImpact.length > 0) {
@@ -656,8 +668,7 @@ USER QUERY: ${query}
       });
     }
 
-    const currentTurnRecordIds = recordIds;
-    const allEvidence = await getStoryEvidence(storyId);
+    const currentTurnRecordIds = resolvedRecordIds;
     const currentTurnEvidence = allEvidence.filter((e) =>
       currentTurnRecordIds.includes(e.id)
     );
@@ -686,7 +697,7 @@ USER QUERY: ${query}
     return NextResponse.json({
       response: parsed.response,
       badge,
-      sources: parsed.sources,
+      sources: resolvedSourceIds.length > 0 ? resolvedSourceIds : parsed.sources,
       suggestions: parsed.suggestions,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
       seenRecordIds: newSeenIds,
@@ -790,11 +801,11 @@ function parseResponse(text: string): {
 
   const sourcesMatch = text.match(/SOURCES:\s*([\s\S]+?)(?=\nSUGGESTION:|\n-|$)/i);
   if (sourcesMatch) {
-    const ids = sourcesMatch[1].match(/기록\s*(\d+)|\[?(\d+)\]?/g);
+    const ids = sourcesMatch[1].match(/기록\s*[A-Za-z0-9_]+|\[[A-Za-z0-9_]+\]/gi);
     if (ids) {
       for (const id of ids) {
-        const num = id.replace(/\D/g, "");
-        if (num) sources.push(num.padStart(3, "0"));
+        const normalized = cleanRecordIdToken(id);
+        if (normalized) sources.push(normalized);
       }
     }
   }
@@ -816,4 +827,120 @@ function parseResponse(text: string): {
     sources: [...new Set(sources)].slice(0, 5),
     suggestions: suggestions.slice(0, 3),
   };
+}
+
+function buildLeadSuggestions(
+  config: StoryConfig,
+  display: StoryDisplayConfig,
+  seenRecordIds: string[]
+): string[] {
+  const suggestions: string[] = [];
+
+  for (const track of display.INVESTIGATION_TRACKS ?? []) {
+    if (track.recordIds.some((id) => !seenRecordIds.includes(id))) {
+      suggestions.push(track.prompt);
+    }
+  }
+
+  for (const [recordId, prompt] of Object.entries(config.nextQuestions?.requiredRecordHint ?? {})) {
+    if (!seenRecordIds.includes(recordId)) {
+      suggestions.push(prompt);
+    }
+  }
+
+  suggestions.push(...display.defaultSuggestions);
+  suggestions.push("/단서");
+
+  return [...new Set(suggestions)].slice(0, 3);
+}
+
+function buildSceneResponse(display: StoryDisplayConfig): string {
+  const scene = display.ASCII_SCENE;
+  if (!scene) {
+    return "[AREA_SCAN]\n현장 스캔 데이터가 아직 등록되지 않았습니다.";
+  }
+
+  return [
+    "[AREA_SCAN]",
+    scene.title,
+    "",
+    ...scene.art,
+    "",
+    "FOCUS:",
+    ...scene.focus.map((item) => `- ${item}`),
+  ].join("\n");
+}
+
+function buildCharacterResponse(display: StoryDisplayConfig): string {
+  const characters = display.ASCII_CHARACTERS ?? [];
+  if (characters.length === 0) {
+    return "[PERSON_FILES]\n인물 시각화 데이터가 아직 등록되지 않았습니다.";
+  }
+
+  return [
+    "[PERSON_FILES]",
+    ...characters.flatMap((character, index) => [
+      "",
+      `${index + 1}. ${character.name} | ${character.role}`,
+      ...character.ascii,
+      `- ${character.brief}`,
+    ]),
+  ].join("\n");
+}
+
+function renderProgressBar(current: number, total: number, width = 10): string {
+  if (total <= 0) return "[----------]";
+  const filled = Math.round((current / total) * width);
+  return `[${"#".repeat(filled)}${"-".repeat(Math.max(0, width - filled))}]`;
+}
+
+function buildInvestigationResponse(
+  config: StoryConfig,
+  display: StoryDisplayConfig,
+  seenRecordIds: string[],
+  hypothesisCount: number
+): string {
+  const tracks = display.INVESTIGATION_TRACKS ?? [];
+  const trackedIds = [...new Set(tracks.flatMap((track) => track.recordIds))];
+  const trackedSeen = trackedIds.filter((id) => seenRecordIds.includes(id)).length;
+  const criticalTotal = config.solution.required_records.length;
+  const criticalSeen = config.solution.required_records.filter((id) =>
+    seenRecordIds.includes(id)
+  ).length;
+
+  const openTracks = tracks
+    .map((track) => ({
+      ...track,
+      seen: track.recordIds.filter((id) => seenRecordIds.includes(id)).length,
+      total: track.recordIds.length,
+    }))
+    .sort((a, b) => a.seen / Math.max(1, a.total) - b.seen / Math.max(1, b.total));
+
+  const lines = [
+    "[INVESTIGATION_BOARD]",
+    `CASE HOOK: ${display.CASE_HOOK ?? "기록을 따라 사건을 재구성하세요."}`,
+    "",
+    `REVIEWED_RECORDS: ${seenRecordIds.length}`,
+    `TRACKED_LEADS: ${trackedSeen}/${trackedIds.length} ${renderProgressBar(trackedSeen, trackedIds.length)}`,
+    `CRITICAL_RECORDS: ${criticalSeen}/${criticalTotal} ${renderProgressBar(criticalSeen, criticalTotal)}`,
+    `ACTIVE_HYPOTHESES: ${hypothesisCount}`,
+  ];
+
+  if (openTracks.length > 0) {
+    lines.push("", "OPEN THREADS:");
+    for (const track of openTracks) {
+      lines.push(
+        `- ${track.title} ${renderProgressBar(track.seen, track.total)} ${track.seen}/${track.total}`,
+        `  LEAD: ${track.lead}`,
+        `  NEXT: ${track.prompt}`
+      );
+    }
+  }
+
+  const unseenCritical = config.solution.required_records.filter((id) => !seenRecordIds.includes(id));
+  if (unseenCritical.length > 0) {
+    lines.push("", `UNSEEN_CRITICAL_IDS: ${unseenCritical.join(", ")}`);
+  }
+
+  return lines.join("\n");
 }

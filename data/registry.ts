@@ -9,6 +9,25 @@ export interface StoryDisplayConfig {
         full: string;
     };
     defaultSuggestions: string[];
+    CASE_HOOK?: string;
+    ASCII_SCENE?: {
+        title: string;
+        art: string[];
+        focus: string[];
+    };
+    ASCII_CHARACTERS?: {
+        name: string;
+        role: string;
+        ascii: string[];
+        brief: string;
+    }[];
+    INVESTIGATION_TRACKS?: {
+        id: string;
+        title: string;
+        prompt: string;
+        lead: string;
+        recordIds: string[];
+    }[];
 }
 
 export interface StoryEntry {

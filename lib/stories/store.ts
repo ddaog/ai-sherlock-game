@@ -98,6 +98,10 @@ function normalizeDisplay(value: unknown): StoryDisplayConfig {
     VICTIM_ALIASES: display.VICTIM_ALIASES,
     SYNOPSIS: display.SYNOPSIS ?? { short: "", full: "" },
     defaultSuggestions: display.defaultSuggestions ?? [],
+    CASE_HOOK: display.CASE_HOOK,
+    ASCII_SCENE: display.ASCII_SCENE,
+    ASCII_CHARACTERS: display.ASCII_CHARACTERS ?? [],
+    INVESTIGATION_TRACKS: display.INVESTIGATION_TRACKS ?? [],
   };
 }
 

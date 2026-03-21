@@ -12,6 +12,7 @@ import { Link } from '@/lib/i18n/routing';
 
 const MAX_HYPOTHESES = 5;
 const MAX_HINTS = 3;
+const SLASH_COMMANDS = ["/가설", "/추리", "/힌트", "/포기", "/현장", "/인물", "/단서"];
 
 const getHintDesc = (hintCount: number) => {
     if (hintCount >= 3) return "사용불가";
@@ -23,6 +24,9 @@ function getSlashCommands(hintCount: number) {
         { cmd: "/가설", desc: "가설 기록" },
         { cmd: "/추리", desc: "결론 제출" },
         { cmd: "/힌트", desc: `힌트 (${getHintDesc(hintCount)})` },
+        { cmd: "/현장", desc: "현장 ASCII 스캔" },
+        { cmd: "/인물", desc: "인물 파일 보기" },
+        { cmd: "/단서", desc: "수사 진행도 보기" },
     ];
     if (hintCount >= MAX_HINTS) {
         base.push({ cmd: "/포기", desc: "정답 공개 및 포기" });
@@ -31,7 +35,13 @@ function getSlashCommands(hintCount: number) {
 }
 
 const isCompleteCommand = (v: string) =>
-    v.startsWith("/가설") || v.startsWith("/추리") || v.startsWith("/힌트") || v.startsWith("/포기");
+    v.startsWith("/가설") ||
+    v.startsWith("/추리") ||
+    v.startsWith("/힌트") ||
+    v.startsWith("/포기") ||
+    v.startsWith("/현장") ||
+    v.startsWith("/인물") ||
+    v.startsWith("/단서");
 
 function highlightVictim(text: string, victim: string, aliases: string[] = []) {
     if (!text || (!victim && aliases.length === 0)) return text;
@@ -56,13 +66,13 @@ function highlightMessageContent(text: string, victim: string, aliases: string[]
     const namesMatched = [victim, ...aliases].filter(Boolean).sort((a, b) => b.length - a.length);
     const namesRegexPart = namesMatched.length > 0 ? namesMatched.join('|') + '|' : '';
 
-    const parts = text.split(new RegExp(`(${namesRegexPart}/가설|/추리|/힌트|/포기)`, "g"));
+    const parts = text.split(new RegExp(`(${namesRegexPart}${SLASH_COMMANDS.join("|")})`, "g"));
     return parts.map((part, i) =>
         namesMatched.includes(part) ? (
             <span key={i} className="text-archive-accent font-semibold">
                 {part}
             </span>
-        ) : ["/가설", "/추리", "/힌트", "/포기"].includes(part) ? (
+        ) : SLASH_COMMANDS.includes(part) ? (
             <span key={i} className="text-archive-accent font-mono font-semibold">
                 {part}
             </span>
@@ -73,9 +83,9 @@ function highlightMessageContent(text: string, victim: string, aliases: string[]
 }
 
 function formatInputWithCommands(text: string) {
-    const parts = text.split(/(\/가설|\/추리|\/힌트|\/포기)/g);
+    const parts = text.split(/(\/가설|\/추리|\/힌트|\/포기|\/현장|\/인물|\/단서)/g);
     return parts.map((part, i) =>
-        ["/가설", "/추리", "/힌트", "/포기"].includes(part) ? (
+        SLASH_COMMANDS.includes(part) ? (
             <span key={i} className="text-archive-accent font-mono font-semibold">
                 {part}
             </span>
@@ -132,6 +142,12 @@ interface Message {
     badge?: { title: string; condition: string };
     sources?: string[];
     suggestions?: string[];
+}
+
+function buildMiniProgressBar(current: number, total: number, width = 8) {
+    if (total <= 0) return "[--------]";
+    const filled = Math.round((current / total) * width);
+    return `[${"#".repeat(filled)}${"-".repeat(Math.max(0, width - filled))}]`;
 }
 
 export default function StoryPlayPage() {
@@ -291,8 +307,8 @@ export default function StoryPlayPage() {
         }, 2000);
     };
 
-    const handleSubmit = async () => {
-        const trimmed = input.trim();
+    const handleSubmit = async (overrideInput?: string) => {
+        const trimmed = (overrideInput ?? input).trim();
         if (!trimmed || loading || solved || showPaywall) return;
 
         if (actualQueriesLeft <= 0) {
@@ -436,114 +452,23 @@ export default function StoryPlayPage() {
 
         setSolveStep(0);
         setSolveForm({ culprit: '', motive: '', method: '' });
+        await handleSubmit(combinedQuery);
+    };
 
-        // Directly process as a normal submit with the combined query
-        const previousInput = input;
-        setInput(combinedQuery);
-        // We need to use functional state update or pass string directly to a submit helper,
-        // but since handleSubmit reads from `input` state, we'll temporarily hack it by
-        // running the exact same logic but using `combinedQuery` instead of `input`.
-
-        setMessages((prev) => [...prev, { role: "user", content: combinedQuery }]);
-        setShowCommandPalette(false);
-        setInput("");
-        setLoading(true);
-
-        if (!isPremium && !isDebugMode) {
-            decreaseToken();
-        }
-
-        try {
-            const history = messages
-                .filter((m) => m.content)
-                .map((m) => ({
-                    role: m.role,
-                    content:
-                        m.role === "user"
-                            ? m.content!
-                            : [
-                                m.response || "",
-                                m.sources?.length ? "SOURCES: " + m.sources.join(", ") : "",
-                                m.suggestions?.length ? "SUGGESTION: " + m.suggestions.join("; ") : "",
-                            ]
-                                .filter(Boolean)
-                                .join("\n"),
-                }));
-
-            const res = await fetch(`/api/stories/${storyId}/query`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    query: combinedQuery,
-                    history,
-                    hypotheses,
-                    seenRecordIds,
-                    triggeredBadges,
-                    sessionState: {
-                        solved,
-                        solvedAt: solved ? new Date().toISOString() : undefined,
-                        hintCount,
-                        ...(pendingHypothesisReplace && { pendingHypothesisReplace }),
-                    },
-                }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (Array.isArray(data.hypotheses)) setHypotheses(data.hypotheses.slice(0, MAX_HYPOTHESES));
-                if (Array.isArray(data.seenRecordIds)) setSeenRecordIds(data.seenRecordIds);
-                if (Array.isArray(data.triggeredBadges)) setTriggeredBadges(data.triggeredBadges);
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        role: "assistant",
-                        response: data.error || "오류가 발생했습니다.",
-                        suggestions: displayConfig?.defaultSuggestions || [],
-                    },
-                ]);
-                setSuggestionIndex(-1);
-                setLoading(false);
-                return;
-            }
-
-            if (Array.isArray(data.hypotheses)) setHypotheses(data.hypotheses.slice(0, MAX_HYPOTHESES));
-            if (Array.isArray(data.seenRecordIds)) setSeenRecordIds(data.seenRecordIds);
-            if (Array.isArray(data.triggeredBadges)) setTriggeredBadges(data.triggeredBadges);
-            if (data.solved === true) setSolved(true);
-            setPendingHypothesisReplace(data.sessionState?.pendingHypothesisReplace);
-            if (typeof data.sessionState?.hintCount === "number") {
-                setHintCount(data.sessionState.hintCount);
-            }
-
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    response: data.response,
-                    badge: data.badge,
-                    sources: data.sources || [],
-                    suggestions: data.suggestions || [],
-                },
-            ]);
-            setSuggestionIndex(-1);
-
-        } catch {
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", response: "연결 오류가 발생했습니다. 다시 시도해 주세요.", suggestions: [] },
-            ]);
-        } finally {
-            setLoading(false);
-            inputRef.current?.focus();
-        }
+    const handleQuickAction = (value: string) => {
+        if (loading || solved || showPaywall) return;
+        void handleSubmit(value);
     };
 
     const handleSelectCommand = (cmd: string) => {
-        setInput(cmd + " ");
         setShowCommandPalette(false);
         setCommandPaletteIndex(0);
-        inputRef.current?.focus();
+        if (cmd === "/가설" || cmd === "/추리") {
+            setInput(cmd + " ");
+            inputRef.current?.focus();
+            return;
+        }
+        void handleSubmit(cmd);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -595,6 +520,29 @@ export default function StoryPlayPage() {
     if (isCheckingEntitlements || !displayConfig) {
         return <div className="flex-1 flex items-center justify-center bg-archive-bg"><span className="w-5 h-5 border-2 border-archive-muted-deep border-t-archive-accent rounded-full animate-spin"></span></div>;
     }
+
+    const asciiScene = displayConfig.ASCII_SCENE;
+    const asciiCharacters = displayConfig.ASCII_CHARACTERS ?? [];
+    const investigationTracks = (displayConfig.INVESTIGATION_TRACKS ?? []).map((track) => {
+        const seen = track.recordIds.filter((id) => seenRecordIds.includes(id)).length;
+        return {
+            ...track,
+            seen,
+            total: track.recordIds.length,
+            complete: track.recordIds.length > 0 && seen === track.recordIds.length,
+        };
+    });
+    const trackedRecordIds = [...new Set(investigationTracks.flatMap((track) => track.recordIds))];
+    const trackedSeenCount = trackedRecordIds.filter((id) => seenRecordIds.includes(id)).length;
+    const investigationPercent =
+        trackedRecordIds.length > 0 ? Math.round((trackedSeenCount / trackedRecordIds.length) * 100) : 0;
+    const openTracks = investigationTracks.filter((track) => !track.complete);
+    const quickActions = [
+        { label: "현장 스캔", value: "/현장" },
+        { label: "인물 파일", value: "/인물" },
+        { label: "수사 보드", value: "/단서" },
+        ...openTracks.slice(0, 2).map((track) => ({ label: track.title, value: track.prompt })),
+    ];
 
     return (
         <div className="flex flex-col h-full w-full bg-archive-bg relative text-archive-text font-serif scanlines overflow-hidden">
@@ -687,12 +635,168 @@ export default function StoryPlayPage() {
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-8 z-10 relative scroll-smooth">
+                    <div className="space-y-4 animate-fade-in">
+                        {displayConfig.CASE_HOOK ? (
+                            <div className="border border-archive-accent/30 bg-archive-accent/10 px-5 py-4 rounded-sm text-[14px] leading-relaxed text-archive-text">
+                                <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent mb-2">
+                                    [Case Hook]
+                                </p>
+                                <p>{highlightVictim(displayConfig.CASE_HOOK, VICTIM_NAME, VICTIM_ALIASES)}</p>
+                            </div>
+                        ) : null}
+
+                        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                            {asciiScene ? (
+                                <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
+                                                [Area Scan]
+                                            </p>
+                                            <h2 className="text-[15px] font-semibold text-white mt-1">{asciiScene.title}</h2>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQuickAction("/현장")}
+                                            className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
+                                        >
+                                            Open
+                                        </button>
+                                    </div>
+                                    <pre className="overflow-x-auto rounded-sm border border-archive-border/60 bg-black/50 px-4 py-3 text-[11px] leading-[1.25] text-archive-muted">
+{asciiScene.art.join("\n")}
+                                    </pre>
+                                    <ul className="space-y-2 text-[13px] text-archive-text/90 leading-relaxed">
+                                        {asciiScene.focus.map((item) => (
+                                            <li key={item} className="flex gap-2">
+                                                <span className="text-archive-accent shrink-0">+</span>
+                                                <span>{highlightVictim(item, VICTIM_NAME, VICTIM_ALIASES)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            ) : null}
+
+                            <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
+                                            [Investigation Board]
+                                        </p>
+                                        <h2 className="text-[15px] font-semibold text-white mt-1">사건 전말 복원률 {investigationPercent}%</h2>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleQuickAction("/단서")}
+                                        className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
+                                    >
+                                        Board
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
+                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Records</p>
+                                        <p className="mt-2 text-2xl font-bold text-white">{seenRecordIds.length}</p>
+                                    </div>
+                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
+                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Tracked</p>
+                                        <p className="mt-2 text-2xl font-bold text-white">{trackedSeenCount}/{trackedRecordIds.length}</p>
+                                    </div>
+                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
+                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Hypothesis</p>
+                                        <p className="mt-2 text-2xl font-bold text-white">{hypotheses.length}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Quick Actions</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {quickActions.map((action) => (
+                                            <button
+                                                key={`${action.label}:${action.value}`}
+                                                type="button"
+                                                onClick={() => handleQuickAction(action.value)}
+                                                className="border border-archive-border px-3 py-2 text-[11px] font-mono tracking-[0.12em] uppercase text-archive-text hover:border-archive-accent hover:text-archive-accent transition-colors"
+                                            >
+                                                {action.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {investigationTracks.map((track) => (
+                                        <div key={track.id} className="border border-archive-border/60 rounded-sm px-4 py-3 bg-black/30">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p className="text-[13px] text-white font-semibold">{track.title}</p>
+                                                    <p className="text-[12px] text-archive-muted mt-1 leading-relaxed">{track.lead}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickAction(track.prompt)}
+                                                    className="shrink-0 text-[10px] font-mono tracking-[0.18em] uppercase text-archive-accent border border-archive-accent/30 px-2 py-1 hover:bg-archive-accent hover:text-black transition-colors"
+                                                >
+                                                    Query
+                                                </button>
+                                            </div>
+                                            <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-archive-muted-deep">
+                                                <span>{buildMiniProgressBar(track.seen, track.total)}</span>
+                                                <span>{track.seen}/{track.total}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+
+                        {asciiCharacters.length > 0 ? (
+                            <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
+                                            [Persons Of Interest]
+                                        </p>
+                                        <h2 className="text-[15px] font-semibold text-white mt-1">ASCII 인물 파일</h2>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleQuickAction("/인물")}
+                                        className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
+                                    >
+                                        Open
+                                    </button>
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    {asciiCharacters.map((character) => (
+                                        <article key={character.name} className="border border-archive-border/60 rounded-sm bg-black/30 p-4">
+                                            <div className="flex gap-4">
+                                                <pre className="overflow-x-auto text-[10px] leading-[1.15] text-archive-muted shrink-0">
+{character.ascii.join("\n")}
+                                                </pre>
+                                                <div className="min-w-0">
+                                                    <p className="text-white font-semibold text-[14px]">{character.name}</p>
+                                                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-archive-accent mt-1">{character.role}</p>
+                                                    <p className="text-[13px] leading-relaxed text-archive-text/90 mt-3">
+                                                        {highlightVictim(character.brief, VICTIM_NAME, VICTIM_ALIASES)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+                        ) : null}
+                    </div>
+
                     {messages.length === 0 && (
                         <div className="text-archive-text/90 text-[14px] md:text-[15px] font-serif space-y-4 pb-6 animate-fade-in leading-relaxed">
                             <p className="font-mono text-archive-accent font-bold text-[12px] tracking-widest uppercase mb-4">[플레이 방법]</p>
                             <p><span className="font-mono text-archive-accent font-bold">/가설</span> 가설 기록. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/가설 박지훈이 범인인 것 같아</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/추리</span> 결론 제출. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/추리 박지훈이 비자금 때문...</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/힌트</span> 적당한 힌트 제공 (3회 제한)</p>
+                            <p><span className="font-mono text-archive-accent font-bold">/현장</span>, <span className="font-mono text-archive-accent font-bold">/인물</span>, <span className="font-mono text-archive-accent font-bold">/단서</span> 로 ASCII 스캔과 수사 보드를 호출할 수 있습니다.</p>
                         </div>
                     )}
 
@@ -1044,7 +1148,9 @@ export default function StoryPlayPage() {
                                 )}
                             </div>
                             <button
-                                onClick={handleSubmit}
+                                onClick={() => {
+                                    void handleSubmit();
+                                }}
                                 disabled={loading || !input.trim() || showPaywall}
                                 className="shrink-0 px-5 md:px-8 py-2 md:py-2 rounded-sm bg-archive-surface text-archive-text font-bold font-mono tracking-widest hover:bg-archive-accent hover:text-white hover:border-archive-accent disabled:opacity-40 disabled:bg-black/40 disabled:text-archive-muted-deep transition-all border border-archive-border shadow-sm uppercase text-[12px] md:text-[13px] active:scale-95"
                             >

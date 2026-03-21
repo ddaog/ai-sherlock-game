@@ -1,3 +1,5 @@
+import { cleanRecordIdToken } from "@/lib/game/recordIds";
+
 export interface Hypothesis {
   id: string;
   text: string;
@@ -48,11 +50,11 @@ export function parseRecordIdsFromLLM(text: string): string[] {
   const ids: string[] = [];
   const sourcesMatch = text.match(/SOURCES:\s*([\s\S]+?)(?=\nSUGGESTION:|\n-|$)/i);
   if (sourcesMatch) {
-    const idsRaw = sourcesMatch[1].match(/기록\s*(\d+)|\[?(\d+)\]?/g);
+    const idsRaw = sourcesMatch[1].match(/기록\s*[A-Za-z0-9_]+|\[[A-Za-z0-9_]+\]/gi);
     if (idsRaw) {
       for (const id of idsRaw) {
-        const num = id.replace(/\D/g, "");
-        if (num) ids.push(num.padStart(3, "0"));
+        const normalized = cleanRecordIdToken(id);
+        if (normalized) ids.push(normalized);
       }
     }
   }

@@ -17,7 +17,7 @@ export const CASE_CONFIG: CaseConfig = {
         culprits: ["잭 스태플턴", "잭스태플턴", "잭", "스태플턴"],
         motive_keywords: ["AGI", "하운드", "프로젝트", "해고", "폐기", "중단", "원한", "복수"],
         method_keywords: ["심박", "조율기", "해킹", "라우터", "스크립트", "알람", "과열", "무선", "패치", "MAC"],
-        required_records: ["e_15", "e_17", "e_63"]
+        required_records: ["15", "17", "63"]
     },
 
     parsing: {
