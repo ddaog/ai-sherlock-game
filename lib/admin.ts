@@ -17,6 +17,11 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return getAdminEmails().has(email.trim().toLowerCase());
 }
 
+function redirectForAdminPage(href: "/login" | "/stories", locale: string): never {
+  redirect({ href, locale });
+  throw new Error("Unreachable after redirect");
+}
+
 export async function requireAdminPage(locale: string): Promise<User> {
   const supabase = await createClient();
   const {
@@ -24,11 +29,11 @@ export async function requireAdminPage(locale: string): Promise<User> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect({ href: "/login", locale });
+    redirectForAdminPage("/login", locale);
   }
 
   if (!isAdminEmail(user.email)) {
-    redirect({ href: "/stories", locale });
+    redirectForAdminPage("/stories", locale);
   }
 
   return user;
