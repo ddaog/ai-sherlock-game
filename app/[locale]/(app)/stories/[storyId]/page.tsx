@@ -26,7 +26,6 @@ function getSlashCommands(hintCount: number) {
         { cmd: "/힌트", desc: `힌트 (${getHintDesc(hintCount)})` },
         { cmd: "/현장", desc: "현장 ASCII 스캔" },
         { cmd: "/인물", desc: "인물 파일 보기" },
-        { cmd: "/단서", desc: "수사 진행도 보기" },
     ];
     if (hintCount >= MAX_HINTS) {
         base.push({ cmd: "/포기", desc: "정답 공개 및 포기" });
@@ -144,12 +143,6 @@ interface Message {
     suggestions?: string[];
 }
 
-function buildMiniProgressBar(current: number, total: number, width = 8) {
-    if (total <= 0) return "[--------]";
-    const filled = Math.round((current / total) * width);
-    return `[${"#".repeat(filled)}${"-".repeat(Math.max(0, width - filled))}]`;
-}
-
 export default function StoryPlayPage() {
     const t = useTranslations('Game');
     const params = useParams();
@@ -175,6 +168,7 @@ export default function StoryPlayPage() {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
     const [isSynopsisOpen, setIsSynopsisOpen] = useState(true);
+    const [isAreaScanOpen, setIsAreaScanOpen] = useState(false);
 
     // Solve Form States (Terminal Style)
     const [solveStep, setSolveStep] = useState<0 | 1 | 2 | 3>(0);
@@ -194,6 +188,10 @@ export default function StoryPlayPage() {
             }
         };
         fetchConfig();
+    }, [storyId]);
+
+    useEffect(() => {
+        setIsAreaScanOpen(false);
     }, [storyId]);
 
     useEffect(() => {
@@ -271,6 +269,7 @@ export default function StoryPlayPage() {
         setPendingHypothesisReplace(undefined);
         setPendingReset(false);
         setShowCommandPalette(false);
+        setIsAreaScanOpen(false);
     };
 
     const handlePaywallUpgrade = (plan: 'lestrade' | 'sherlock' | 'holmes') => {
@@ -523,26 +522,6 @@ export default function StoryPlayPage() {
 
     const asciiScene = displayConfig.ASCII_SCENE;
     const asciiCharacters = displayConfig.ASCII_CHARACTERS ?? [];
-    const investigationTracks = (displayConfig.INVESTIGATION_TRACKS ?? []).map((track) => {
-        const seen = track.recordIds.filter((id) => seenRecordIds.includes(id)).length;
-        return {
-            ...track,
-            seen,
-            total: track.recordIds.length,
-            complete: track.recordIds.length > 0 && seen === track.recordIds.length,
-        };
-    });
-    const trackedRecordIds = [...new Set(investigationTracks.flatMap((track) => track.recordIds))];
-    const trackedSeenCount = trackedRecordIds.filter((id) => seenRecordIds.includes(id)).length;
-    const investigationPercent =
-        trackedRecordIds.length > 0 ? Math.round((trackedSeenCount / trackedRecordIds.length) * 100) : 0;
-    const openTracks = investigationTracks.filter((track) => !track.complete);
-    const quickActions = [
-        { label: "현장 스캔", value: "/현장" },
-        { label: "인물 파일", value: "/인물" },
-        { label: "수사 보드", value: "/단서" },
-        ...openTracks.slice(0, 2).map((track) => ({ label: track.title, value: track.prompt })),
-    ];
 
     return (
         <div className="flex flex-col h-full w-full bg-archive-bg relative text-archive-text font-serif scanlines overflow-hidden">
@@ -645,142 +624,154 @@ export default function StoryPlayPage() {
                             </div>
                         ) : null}
 
-                        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                            {asciiScene ? (
-                                <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
-                                                [Area Scan]
-                                            </p>
-                                            <h2 className="text-[15px] font-semibold text-white mt-1">{asciiScene.title}</h2>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleQuickAction("/현장")}
-                                            className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
-                                        >
-                                            Open
-                                        </button>
-                                    </div>
-                                    <pre className="overflow-x-auto rounded-sm border border-archive-border/60 bg-black/50 px-4 py-3 text-[11px] leading-[1.25] text-archive-muted">
-{asciiScene.art.join("\n")}
-                                    </pre>
-                                    <ul className="space-y-2 text-[13px] text-archive-text/90 leading-relaxed">
-                                        {asciiScene.focus.map((item) => (
-                                            <li key={item} className="flex gap-2">
-                                                <span className="text-archive-accent shrink-0">+</span>
-                                                <span>{highlightVictim(item, VICTIM_NAME, VICTIM_ALIASES)}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </section>
-                            ) : null}
-
+                        {asciiScene ? (
                             <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
-                                            [Investigation Board]
+                                            [Area Scan]
                                         </p>
-                                        <h2 className="text-[15px] font-semibold text-white mt-1">사건 전말 복원률 {investigationPercent}%</h2>
+                                        <h2 className="text-[15px] font-semibold text-white mt-1">{asciiScene.title}</h2>
+                                        <p className="mt-2 text-[13px] leading-relaxed text-archive-muted">
+                                            {isAreaScanOpen
+                                                ? "현장 스캔 원문과 포인트를 펼쳐서 보고 있습니다."
+                                                : "초기 화면에서는 간략 요약만 보여주고, 필요할 때만 상세 스캔을 여는 구조입니다."}
+                                        </p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleQuickAction("/단서")}
-                                        className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
-                                    >
-                                        Board
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
-                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Records</p>
-                                        <p className="mt-2 text-2xl font-bold text-white">{seenRecordIds.length}</p>
-                                    </div>
-                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
-                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Tracked</p>
-                                        <p className="mt-2 text-2xl font-bold text-white">{trackedSeenCount}/{trackedRecordIds.length}</p>
-                                    </div>
-                                    <div className="border border-archive-border/60 bg-black/40 px-3 py-3 rounded-sm">
-                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Hypothesis</p>
-                                        <p className="mt-2 text-2xl font-bold text-white">{hypotheses.length}</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">Quick Actions</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {quickActions.map((action) => (
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        {isAreaScanOpen ? (
                                             <button
-                                                key={`${action.label}:${action.value}`}
                                                 type="button"
-                                                onClick={() => handleQuickAction(action.value)}
-                                                className="border border-archive-border px-3 py-2 text-[11px] font-mono tracking-[0.12em] uppercase text-archive-text hover:border-archive-accent hover:text-archive-accent transition-colors"
+                                                onClick={() => handleQuickAction("/현장")}
+                                                className="border border-archive-border px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-text hover:border-archive-accent hover:text-archive-accent transition-colors"
                                             >
-                                                {action.label}
+                                                Query
                                             </button>
-                                        ))}
+                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAreaScanOpen((prev) => !prev)}
+                                            className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
+                                        >
+                                            {isAreaScanOpen ? "Close" : "Open"}
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {investigationTracks.map((track) => (
-                                        <div key={track.id} className="border border-archive-border/60 rounded-sm px-4 py-3 bg-black/30">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="text-[13px] text-white font-semibold">{track.title}</p>
-                                                    <p className="text-[12px] text-archive-muted mt-1 leading-relaxed">{track.lead}</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleQuickAction(track.prompt)}
-                                                    className="shrink-0 text-[10px] font-mono tracking-[0.18em] uppercase text-archive-accent border border-archive-accent/30 px-2 py-1 hover:bg-archive-accent hover:text-black transition-colors"
-                                                >
-                                                    Query
-                                                </button>
-                                            </div>
-                                            <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-archive-muted-deep">
-                                                <span>{buildMiniProgressBar(track.seen, track.total)}</span>
-                                                <span>{track.seen}/{track.total}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                {isAreaScanOpen ? (
+                                    <div className="space-y-4">
+                                        <pre className="overflow-x-auto rounded-sm border border-archive-border/60 bg-black/50 px-4 py-3 text-[11px] leading-[1.25] text-archive-muted">
+{asciiScene.art.join("\n")}
+                                        </pre>
+                                        <ul className="space-y-2 text-[13px] text-archive-text/90 leading-relaxed">
+                                            {asciiScene.focus.map((item) => (
+                                                <li key={item} className="flex gap-2">
+                                                    <span className="text-archive-accent shrink-0">+</span>
+                                                    <span>{highlightVictim(item, VICTIM_NAME, VICTIM_ALIASES)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-sm border border-archive-border/60 bg-black/30 px-4 py-4">
+                                        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                            Archive Summary
+                                        </p>
+                                        <p className="mt-2 text-[13px] leading-relaxed text-archive-text/90">
+                                            {highlightVictim(asciiScene.focus[0] ?? "현장 스캔 데이터가 준비되어 있습니다.", VICTIM_NAME, VICTIM_ALIASES)}
+                                        </p>
+                                        <p className="mt-3 font-mono text-[11px] text-archive-muted-deep">
+                                            포인트 {asciiScene.focus.length}개 준비됨
+                                        </p>
+                                    </div>
+                                )}
                             </section>
-                        </div>
+                        ) : null}
 
                         {asciiCharacters.length > 0 ? (
-                            <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
+                            <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-5">
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
                                         <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
                                             [Persons Of Interest]
                                         </p>
                                         <h2 className="text-[15px] font-semibold text-white mt-1">ASCII 인물 파일</h2>
+                                        <p className="mt-2 text-[13px] leading-relaxed text-archive-muted">
+                                            인물 텍스트를 작은 부가정보가 아니라 초상 자체가 먼저 읽히도록 재배치했습니다.
+                                        </p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => handleQuickAction("/인물")}
                                         className="border border-archive-accent/40 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent hover:bg-archive-accent hover:text-black transition-colors"
                                     >
-                                        Open
+                                        Query
                                     </button>
                                 </div>
-                                <div className="grid gap-3 xl:grid-cols-2">
-                                    {asciiCharacters.map((character) => (
-                                        <article key={character.name} className="border border-archive-border/60 rounded-sm bg-black/30 p-4">
-                                            <div className="flex items-start gap-4">
-                                                <pre className="overflow-x-auto shrink-0 font-mono text-[9px] leading-[1.05] text-archive-muted md:text-[10px]">
+                                <div className="grid gap-4 xl:grid-cols-2">
+                                    {asciiCharacters.map((character, index) => (
+                                        <article
+                                            key={character.name}
+                                            className="relative overflow-hidden rounded-sm border border-archive-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.18))]"
+                                        >
+                                            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-archive-accent/70 to-transparent" />
+                                            <div className="relative p-4 space-y-4">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="min-w-0">
+                                                        <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-muted-deep">
+                                                            Person {String(index + 1).padStart(2, "0")}
+                                                        </p>
+                                                        <h3 className="mt-2 text-[21px] leading-none text-white">{character.name}</h3>
+                                                        <p className="mt-2 font-mono text-[10px] tracking-[0.2em] uppercase text-archive-accent">
+                                                            {character.role}
+                                                        </p>
+                                                    </div>
+                                                    <div className="shrink-0 rounded-sm border border-archive-border/70 bg-black/30 px-3 py-2 text-right">
+                                                        <p className="font-mono text-[9px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                            Record
+                                                        </p>
+                                                        <p className="mt-1 font-mono text-[12px] text-white">
+                                                            #{String(index + 1).padStart(2, "0")}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid gap-4 lg:grid-cols-[minmax(0,200px)_1fr]">
+                                                    <div className="flex min-h-[276px] items-center justify-center rounded-sm border border-archive-border/70 bg-[#0a0a0a] px-3 py-4 shadow-inner">
+                                                        <pre className="overflow-x-auto font-mono text-[8px] leading-[1.03] text-[#d6d0c5] sm:text-[8.5px]">
 {character.ascii.join("\n")}
-                                                </pre>
-                                                <div className="min-w-0">
-                                                    <p className="text-white font-semibold text-[14px]">{character.name}</p>
-                                                    <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-archive-accent mt-1">{character.role}</p>
-                                                    <p className="text-[13px] leading-relaxed text-archive-text/90 mt-3">
-                                                        {highlightVictim(character.brief, VICTIM_NAME, VICTIM_ALIASES)}
-                                                    </p>
+                                                        </pre>
+                                                    </div>
+
+                                                    <div className="flex flex-col justify-between gap-4">
+                                                        <div className="rounded-sm border border-archive-border/60 bg-black/25 px-4 py-4">
+                                                            <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                                Profile Note
+                                                            </p>
+                                                            <p className="mt-3 text-[13px] leading-relaxed text-archive-text/90">
+                                                                {highlightVictim(character.brief, VICTIM_NAME, VICTIM_ALIASES)}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="grid gap-3 sm:grid-cols-2">
+                                                            <div className="rounded-sm border border-archive-border/60 bg-black/20 px-3 py-3">
+                                                                <p className="font-mono text-[9px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                                    Render
+                                                                </p>
+                                                                <p className="mt-2 text-[13px] text-white">
+                                                                    Side Profile
+                                                                </p>
+                                                            </div>
+                                                            <div className="rounded-sm border border-archive-border/60 bg-black/20 px-3 py-3">
+                                                                <p className="font-mono text-[9px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                                    Source
+                                                                </p>
+                                                                <p className="mt-2 text-[13px] text-white">
+                                                                    Text Portrait
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </article>
@@ -796,7 +787,7 @@ export default function StoryPlayPage() {
                             <p><span className="font-mono text-archive-accent font-bold">/가설</span> 가설 기록. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/가설 박지훈이 범인인 것 같아</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/추리</span> 결론 제출. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/추리 박지훈이 비자금 때문...</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/힌트</span> 적당한 힌트 제공 (3회 제한)</p>
-                            <p><span className="font-mono text-archive-accent font-bold">/현장</span>, <span className="font-mono text-archive-accent font-bold">/인물</span>, <span className="font-mono text-archive-accent font-bold">/단서</span> 로 ASCII 스캔과 수사 보드를 호출할 수 있습니다.</p>
+                            <p><span className="font-mono text-archive-accent font-bold">/현장</span>, <span className="font-mono text-archive-accent font-bold">/인물</span> 로 ASCII 스캔과 인물 파일을 다시 호출할 수 있습니다.</p>
                         </div>
                     )}
 

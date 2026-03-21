@@ -849,7 +849,6 @@ function buildLeadSuggestions(
   }
 
   suggestions.push(...display.defaultSuggestions);
-  suggestions.push("/단서");
 
   return [...new Set(suggestions)].slice(0, 3);
 }
