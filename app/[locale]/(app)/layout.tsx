@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { Link } from '@/lib/i18n/routing';
+import { isAdminUser } from '@/lib/admin';
 import { createClient } from '@/lib/supabase/server';
 import DebugTrigger from './DebugTrigger';
 
@@ -15,6 +17,8 @@ export default async function AppLayout({
         redirect('/login');
     }
 
+    const canAccessAdmin = isAdminUser(user);
+
     return (
         <div className="h-full w-full bg-archive-bg flex flex-col font-serif overflow-hidden">
             <header className="border-b border-archive-border bg-black/80 backdrop-blur-md sticky top-0 z-50">
@@ -25,8 +29,18 @@ export default async function AppLayout({
                             AI Sherlock <span className="text-archive-accent opacity-80 text-xs ml-1 font-sans font-bold mt-1">V0.1</span>
                         </div>
                     </DebugTrigger>
-                    <div className="text-xs text-archive-muted-deep tracking-wider">
-                        {user.email}
+                    <div className="flex items-center gap-4">
+                        {canAccessAdmin ? (
+                            <Link
+                                href="/admin/stories"
+                                className="text-[11px] tracking-[0.24em] uppercase border border-archive-accent/60 px-3 py-2 text-archive-accent hover:bg-archive-accent hover:text-white transition-colors"
+                            >
+                                Admin
+                            </Link>
+                        ) : null}
+                        <div className="text-xs text-archive-muted-deep tracking-wider">
+                            {user.email}
+                        </div>
                     </div>
                 </div>
             </header>

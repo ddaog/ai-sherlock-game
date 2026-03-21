@@ -17,6 +17,28 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return getAdminEmails().has(email.trim().toLowerCase());
 }
 
+function hasAdminRole(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object") return false;
+
+  const role = (metadata as { role?: unknown }).role;
+  return typeof role === "string" && role.trim().toLowerCase() === "admin";
+}
+
+export function isAdminUser(
+  user:
+    | Pick<User, "email" | "app_metadata" | "user_metadata">
+    | null
+    | undefined
+): boolean {
+  if (!user) return false;
+
+  return (
+    isAdminEmail(user.email) ||
+    hasAdminRole(user.app_metadata) ||
+    hasAdminRole(user.user_metadata)
+  );
+}
+
 function redirectForAdminPage(href: "/login" | "/stories", locale: string): never {
   redirect({ href, locale });
   throw new Error("Unreachable after redirect");
@@ -32,7 +54,7 @@ export async function requireAdminPage(locale: string): Promise<User> {
     redirectForAdminPage("/login", locale);
   }
 
-  if (!isAdminEmail(user.email)) {
+  if (!isAdminUser(user)) {
     redirectForAdminPage("/stories", locale);
   }
 
@@ -56,7 +78,7 @@ export async function requireAdminApi(): Promise<AdminApiResult> {
     };
   }
 
-  if (!isAdminEmail(user.email)) {
+  if (!isAdminUser(user)) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
