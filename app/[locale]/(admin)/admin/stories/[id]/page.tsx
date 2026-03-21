@@ -1,20 +1,14 @@
 import { notFound } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getAdminStoryBundle, type AdminStoryBundle } from "@/lib/stories/store";
 import StoryEditor from "./StoryEditor";
 
 export default async function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = createAdminClient();
   
-  let story = null;
+  let story: AdminStoryBundle | null = null;
   if (id !== "new") {
-    const { data, error } = await supabase
-      .from("stories")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error || !data) {
+    const data = await getAdminStoryBundle(id);
+    if (!data) {
       notFound();
     }
     story = data;
@@ -28,7 +22,12 @@ export default async function StoryDetailPage({ params }: { params: Promise<{ id
         </h2>
       </div>
 
-      <StoryEditor initialData={story} isNew={id === "new"} />
+      <StoryEditor
+        initialData={story}
+        initialHasStaticFallback={story?.hasStaticFallback ?? false}
+        initialSource={story?.source ?? null}
+        isNew={id === "new"}
+      />
     </div>
   );
 }

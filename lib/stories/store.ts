@@ -33,6 +33,19 @@ export interface StorySummary {
   isFree: boolean;
 }
 
+export type StorySource = "db" | "static";
+
+export interface AdminStorySummary extends StorySummary {
+  createdAt: string | null;
+  hasStaticFallback: boolean;
+  source: StorySource;
+}
+
+export interface AdminStoryBundle extends StoryBundle {
+  hasStaticFallback: boolean;
+  source: StorySource;
+}
+
 const getEvidencePath = (storyId: string) =>
   path.join(process.cwd(), "data", "stories", storyId, "evidence.json");
 const getEmbeddingsPath = (storyId: string) =>
@@ -81,32 +94,143 @@ async function loadStaticStoryBundle(storyId: string): Promise<StoryBundle | und
   };
 }
 
+function mapDbStoryToBundle(data: {
+  id: string;
+  title: string;
+  is_free: boolean;
+  config: unknown;
+  display: unknown;
+  evidence: unknown;
+  embeddings: unknown;
+}): AdminStoryBundle {
+  return {
+    id: data.id,
+    title: data.title,
+    isFree: data.is_free,
+    config: data.config as CaseConfig,
+    display: data.display as StoryDisplayConfig,
+    evidence: normalizeEvidence(data.evidence),
+    embeddings: normalizeEmbeddings(data.embeddings),
+    hasStaticFallback: Boolean(STORIES_REGISTRY[data.id]),
+    source: "db",
+  };
+}
+
+async function loadDbStoryBundle(
+  storyId: string
+): Promise<AdminStoryBundle | undefined> {
+  if (!canUseStoriesDb()) return undefined;
+
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("stories")
+      .select("id, title, is_free, config, display, evidence, embeddings")
+      .eq("id", storyId)
+      .single();
+
+    if (!error && data) {
+      return mapDbStoryToBundle(data);
+    }
+  } catch {
+    // Fall back to static files.
+  }
+
+  return undefined;
+}
+
+async function getStaticAdminStories(): Promise<AdminStorySummary[]> {
+  const storyIds = Object.keys(STORIES_REGISTRY);
+  const bundles = await Promise.all(
+    storyIds.map((storyId) => loadStaticStoryBundle(storyId))
+  );
+
+  return bundles
+    .filter((bundle): bundle is StoryBundle => Boolean(bundle))
+    .map((bundle) => ({
+      id: bundle.id,
+      title: bundle.title,
+      isFree: bundle.isFree,
+      createdAt: null,
+      hasStaticFallback: true,
+      source: "static" as const,
+    }));
+}
+
+async function getDbAdminStories(): Promise<AdminStorySummary[]> {
+  if (!canUseStoriesDb()) return [];
+
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("stories")
+      .select("id, title, is_free, created_at")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      return data.map((story) => ({
+        id: story.id,
+        title: story.title,
+        isFree: story.is_free,
+        createdAt: story.created_at ?? null,
+        hasStaticFallback: Boolean(STORIES_REGISTRY[story.id]),
+        source: "db" as const,
+      }));
+    }
+  } catch {
+    // Fall back to static files.
+  }
+
+  return [];
+}
+
+export async function getAdminStoryBundle(
+  storyId: string
+): Promise<AdminStoryBundle | undefined> {
+  const dbStory = await loadDbStoryBundle(storyId);
+  if (dbStory) return dbStory;
+
+  const staticStory = await loadStaticStoryBundle(storyId);
+  if (!staticStory) return undefined;
+
+  return {
+    ...staticStory,
+    hasStaticFallback: true,
+    source: "static",
+  };
+}
+
+export async function getAllAdminStories(): Promise<AdminStorySummary[]> {
+  const [staticStories, dbStories] = await Promise.all([
+    getStaticAdminStories(),
+    getDbAdminStories(),
+  ]);
+
+  const mergedStories = new Map<string, AdminStorySummary>();
+
+  for (const story of staticStories) {
+    mergedStories.set(story.id, story);
+  }
+
+  for (const story of dbStories) {
+    mergedStories.set(story.id, story);
+  }
+
+  return Array.from(mergedStories.values()).sort((a, b) => {
+    if (a.source !== b.source) return a.source === "db" ? -1 : 1;
+    if (a.createdAt && b.createdAt) {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    return a.title.localeCompare(b.title);
+  });
+}
+
 export async function getStoryBundle(
   storyId: string
 ): Promise<StoryBundle | undefined> {
-  if (canUseStoriesDb()) {
-    try {
-      const supabase = createAdminClient();
-      const { data, error } = await supabase
-        .from("stories")
-        .select("id, title, is_free, config, display, evidence, embeddings")
-        .eq("id", storyId)
-        .single();
-
-      if (!error && data) {
-        return {
-          id: data.id,
-          title: data.title,
-          isFree: data.is_free,
-          config: data.config as CaseConfig,
-          display: data.display as StoryDisplayConfig,
-          evidence: normalizeEvidence(data.evidence),
-          embeddings: normalizeEmbeddings(data.embeddings),
-        };
-      }
-    } catch {
-      // Fall back to static files.
-    }
+  const dbStory = await loadDbStoryBundle(storyId);
+  if (dbStory) {
+    return dbStory;
   }
 
   return loadStaticStoryBundle(storyId);
@@ -157,33 +281,10 @@ export async function saveStoryEmbeddings(
 }
 
 export async function getAllStories(): Promise<StorySummary[]> {
-  if (canUseStoriesDb()) {
-    try {
-      const supabase = createAdminClient();
-      const { data, error } = await supabase
-        .from("stories")
-        .select("id, title, is_free")
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        return data.map((story) => ({
-          id: story.id,
-          title: story.title,
-          isFree: story.is_free,
-        }));
-      }
-    } catch {
-      // Fall back to static files.
-    }
-  }
-
-  const storyIds = Object.keys(STORIES_REGISTRY);
-  const bundles = await Promise.all(storyIds.map((storyId) => loadStaticStoryBundle(storyId)));
-  return bundles
-    .filter((bundle): bundle is StoryBundle => Boolean(bundle))
-    .map((bundle) => ({
-      id: bundle.id,
-      title: bundle.title,
-      isFree: bundle.isFree,
-    }));
+  const stories = await getAllAdminStories();
+  return stories.map((story) => ({
+    id: story.id,
+    title: story.title,
+    isFree: story.isFree,
+  }));
 }

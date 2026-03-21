@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "@/lib/i18n/routing";
+import type { StorySource } from "@/lib/stories/store";
 
 interface StoryRecord {
   id: string;
   title: string;
-  is_free: boolean;
+  isFree: boolean;
   config: unknown;
   display: unknown;
   evidence: unknown;
@@ -15,10 +16,17 @@ interface StoryRecord {
 
 interface StoryEditorProps {
   initialData: StoryRecord | null;
+  initialHasStaticFallback: boolean;
+  initialSource: StorySource | null;
   isNew: boolean;
 }
 
-export default function StoryEditor({ initialData, isNew }: StoryEditorProps) {
+export default function StoryEditor({
+  initialData,
+  initialHasStaticFallback,
+  initialSource,
+  isNew,
+}: StoryEditorProps) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -26,12 +34,15 @@ export default function StoryEditor({ initialData, isNew }: StoryEditorProps) {
 
   const [id, setId] = useState(initialData?.id || "");
   const [title, setTitle] = useState(initialData?.title || "");
-  const [isFree, setIsFree] = useState(initialData?.is_free || false);
+  const [isFree, setIsFree] = useState(initialData?.isFree || false);
 
   const [config, setConfig] = useState(JSON.stringify(initialData?.config || {}, null, 2));
   const [display, setDisplay] = useState(JSON.stringify(initialData?.display || {}, null, 2));
   const [evidence, setEvidence] = useState(JSON.stringify(initialData?.evidence || [], null, 2));
   const [embeddings, setEmbeddings] = useState(JSON.stringify(initialData?.embeddings || [], null, 2));
+
+  const isStaticStory = !isNew && initialSource === "static";
+  const isDbOverride = !isNew && initialSource === "db" && initialHasStaticFallback;
 
   const handleSave = async () => {
     setLoading(true);
@@ -99,6 +110,20 @@ export default function StoryEditor({ initialData, isNew }: StoryEditorProps) {
           {error}
         </div>
       )}
+
+      {isStaticStory ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          This scenario comes from <code>data/stories</code>. Saving here will create a
+          database override, and delete is disabled for bundled scenarios.
+        </div>
+      ) : null}
+
+      {isDbOverride ? (
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          This scenario is a database override for a bundled scenario. Deleting it will
+          revert the app back to the bundled version.
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -177,13 +202,13 @@ export default function StoryEditor({ initialData, isNew }: StoryEditorProps) {
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-800">
-        {!isNew && (
+        {!isNew && !isStaticStory && (
           <button
             onClick={handleDelete}
             disabled={loading}
             className="rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
           >
-            Delete Scenario
+            {isDbOverride ? "Delete DB Override" : "Delete Scenario"}
           </button>
         )}
         <div className="flex gap-3 ml-auto">
