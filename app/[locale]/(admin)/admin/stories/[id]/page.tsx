@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { getAdminStoryBundle, type AdminStoryBundle } from "@/lib/stories/store";
+import { getAdminStoryBundle, type AdminEditableStory } from "@/lib/stories/store";
 import StoryEditor from "./StoryEditor";
 
 export default async function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
-  let story: AdminStoryBundle | null = null;
+  let story: AdminEditableStory | null = null;
   if (id !== "new") {
     const data = await getAdminStoryBundle(id);
     if (!data) {

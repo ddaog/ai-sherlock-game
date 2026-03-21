@@ -46,6 +46,24 @@ export interface AdminStoryBundle extends StoryBundle {
   source: StorySource;
 }
 
+export interface AdminEditableStory {
+  id: string;
+  title: string;
+  isFree: boolean;
+  config: unknown;
+  display: unknown;
+  evidence: unknown;
+  embeddings: unknown | null;
+  hasStaticFallback: boolean;
+  source: StorySource;
+}
+
+interface SerializedRegExp {
+  __type: "RegExp";
+  source: string;
+  flags: string;
+}
+
 const getEvidencePath = (storyId: string) =>
   path.join(process.cwd(), "data", "stories", storyId, "evidence.json");
 const getEmbeddingsPath = (storyId: string) =>
@@ -65,12 +83,86 @@ function normalizeEmbeddings(value: unknown): StoryEmbeddingRecord[] | null {
   return Array.isArray(value) ? (value as StoryEmbeddingRecord[]) : null;
 }
 
+function normalizeDisplay(value: unknown): StoryDisplayConfig {
+  if (
+    value &&
+    typeof value === "object" &&
+    "displayStruct" in (value as Record<string, unknown>)
+  ) {
+    return (value as { displayStruct: StoryDisplayConfig }).displayStruct;
+  }
+
+  const display = value as Partial<StoryDisplayConfig>;
+  return {
+    VICTIM_NAME: display.VICTIM_NAME ?? "",
+    VICTIM_ALIASES: display.VICTIM_ALIASES,
+    SYNOPSIS: display.SYNOPSIS ?? { short: "", full: "" },
+    defaultSuggestions: display.defaultSuggestions ?? [],
+  };
+}
+
+function isSerializedRegExp(value: unknown): value is SerializedRegExp {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    (value as { __type?: unknown }).__type === "RegExp" &&
+    typeof (value as { source?: unknown }).source === "string" &&
+    typeof (value as { flags?: unknown }).flags === "string"
+  );
+}
+
+function encodeSpecialTypes(value: unknown): unknown {
+  if (value instanceof RegExp) {
+    return {
+      __type: "RegExp",
+      source: value.source,
+      flags: value.flags,
+    } satisfies SerializedRegExp;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => encodeSpecialTypes(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entryValue]) => [
+        key,
+        encodeSpecialTypes(entryValue),
+      ])
+    );
+  }
+
+  return value;
+}
+
+function decodeSpecialTypes(value: unknown): unknown {
+  if (isSerializedRegExp(value)) {
+    return new RegExp(value.source, value.flags);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => decodeSpecialTypes(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entryValue]) => [
+        key,
+        decodeSpecialTypes(entryValue),
+      ])
+    );
+  }
+
+  return value;
+}
+
 async function loadStaticStoryBundle(storyId: string): Promise<StoryBundle | undefined> {
   const story = STORIES_REGISTRY[storyId];
   if (!story) return undefined;
 
   const config = await story.asyncGetConfig();
-  const display = await story.asyncGetDisplay();
+  const display = normalizeDisplay(await story.asyncGetDisplay());
   const evidence = JSON.parse(
     fs.readFileSync(getEvidencePath(storyId), "utf-8")
   ) as StoryEvidenceRecord[];
@@ -107,12 +199,26 @@ function mapDbStoryToBundle(data: {
     id: data.id,
     title: data.title,
     isFree: data.is_free,
-    config: data.config as CaseConfig,
-    display: data.display as StoryDisplayConfig,
-    evidence: normalizeEvidence(data.evidence),
-    embeddings: normalizeEmbeddings(data.embeddings),
+    config: decodeSpecialTypes(data.config) as CaseConfig,
+    display: normalizeDisplay(decodeSpecialTypes(data.display)),
+    evidence: normalizeEvidence(decodeSpecialTypes(data.evidence)),
+    embeddings: normalizeEmbeddings(decodeSpecialTypes(data.embeddings)),
     hasStaticFallback: Boolean(STORIES_REGISTRY[data.id]),
     source: "db",
+  };
+}
+
+function toAdminEditableStory(story: AdminStoryBundle): AdminEditableStory {
+  return {
+    id: story.id,
+    title: story.title,
+    isFree: story.isFree,
+    config: encodeSpecialTypes(story.config),
+    display: encodeSpecialTypes(story.display),
+    evidence: encodeSpecialTypes(story.evidence),
+    embeddings: encodeSpecialTypes(story.embeddings),
+    hasStaticFallback: story.hasStaticFallback,
+    source: story.source,
   };
 }
 
@@ -186,18 +292,18 @@ async function getDbAdminStories(): Promise<AdminStorySummary[]> {
 
 export async function getAdminStoryBundle(
   storyId: string
-): Promise<AdminStoryBundle | undefined> {
+): Promise<AdminEditableStory | undefined> {
   const dbStory = await loadDbStoryBundle(storyId);
-  if (dbStory) return dbStory;
+  if (dbStory) return toAdminEditableStory(dbStory);
 
   const staticStory = await loadStaticStoryBundle(storyId);
   if (!staticStory) return undefined;
 
-  return {
+  return toAdminEditableStory({
     ...staticStory,
     hasStaticFallback: true,
     source: "static",
-  };
+  });
 }
 
 export async function getAllAdminStories(): Promise<AdminStorySummary[]> {
