@@ -768,11 +768,11 @@ export default function StoryPlayPage() {
                                         Open
                                     </button>
                                 </div>
-                                <div className="grid gap-3 md:grid-cols-2">
+                                <div className="grid gap-3 xl:grid-cols-2">
                                     {asciiCharacters.map((character) => (
                                         <article key={character.name} className="border border-archive-border/60 rounded-sm bg-black/30 p-4">
-                                            <div className="flex gap-4">
-                                                <pre className="overflow-x-auto text-[10px] leading-[1.15] text-archive-muted shrink-0">
+                                            <div className="flex items-start gap-4">
+                                                <pre className="overflow-x-auto shrink-0 font-mono text-[9px] leading-[1.05] text-archive-muted md:text-[10px]">
 {character.ascii.join("\n")}
                                                 </pre>
                                                 <div className="min-w-0">
