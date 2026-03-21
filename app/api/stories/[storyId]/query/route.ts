@@ -5,6 +5,7 @@ import {
 } from "@/lib/game/guardrails";
 import { getTopKEvidence } from "@/lib/game/embeddings";
 import { chatCompletion } from "@/lib/game/openai";
+import { getStoryConfig, getStoryEvidence } from "@/lib/stories/store";
 import {
   type Hypothesis,
   detectDeleteIntent,
@@ -16,8 +17,6 @@ import {
   nextHypothesisId,
 } from "@/lib/game/hypothesesSimple";
 import { evaluateBadges } from "@/lib/game/badgeEngine";
-import { getStoryConfig } from "@/data/registry";
-import { loadEvidenceSync } from "@/lib/game/embeddings";
 import { parseSubmission } from "@/lib/game/submissionParser";
 import { gradeSubmission, isSolved } from "@/lib/game/grader";
 
@@ -658,7 +657,7 @@ USER QUERY: ${query}
     }
 
     const currentTurnRecordIds = recordIds;
-    const allEvidence = loadEvidenceSync(storyId);
+    const allEvidence = await getStoryEvidence(storyId);
     const currentTurnEvidence = allEvidence.filter((e) =>
       currentTurnRecordIds.includes(e.id)
     );

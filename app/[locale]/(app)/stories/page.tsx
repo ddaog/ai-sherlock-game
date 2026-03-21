@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import StoryGrid from './StoryGrid';
+import { getAllStories } from '@/lib/stories/store';
 
 export default async function StoriesPage() {
     const supabase = await createClient();
@@ -16,6 +17,8 @@ export default async function StoriesPage() {
         isPremium = sub?.status === 'active' && sub?.plan !== 'free';
     }
 
+    const stories = await getAllStories();
+
     // Workaround for next-intl in async Server Components
     const t = await getTranslations('Stories');
 
@@ -28,7 +31,7 @@ export default async function StoriesPage() {
                 <p className="text-archive-muted-deep text-[13px] tracking-wider font-mono hidden md:block">SELECT INVESTIGATION_</p>
             </div>
 
-            <StoryGrid userId={user?.id || ''} isPremium={isPremium} />
+            <StoryGrid userId={user?.id || ''} isPremium={isPremium} stories={stories} />
         </div>
     );
 }

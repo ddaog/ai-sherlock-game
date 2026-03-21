@@ -7,7 +7,7 @@ import { Lock, ChevronLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTokenSystem } from '@/lib/hooks/useTokenSystem';
-import { getStoryDisplay, type StoryDisplayConfig } from '@/data/registry';
+import type { StoryDisplayConfig } from '@/data/registry';
 import { Link } from '@/lib/i18n/routing';
 
 const MAX_HYPOTHESES = 5;
@@ -168,9 +168,13 @@ export default function StoryPlayPage() {
 
     useEffect(() => {
         const fetchConfig = async () => {
-            const config = await getStoryDisplay(storyId);
-            if (config) {
+            try {
+                const res = await fetch(`/api/stories/${storyId}/display`);
+                if (!res.ok) return;
+                const config = await res.json() as StoryDisplayConfig;
                 setDisplayConfig(config);
+            } catch {
+                setDisplayConfig(null);
             }
         };
         fetchConfig();

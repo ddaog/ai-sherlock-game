@@ -4,23 +4,23 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/routing';
 import { Lock, FileText } from 'lucide-react';
 import { useTokenSystem } from '@/lib/hooks/useTokenSystem';
+import type { StorySummary } from '@/lib/stories/store';
 
-const STORIES = [
-    { id: '1', isFree: true },
-    { id: '2', isFree: false },
-    { id: '3', isFree: false },
-    { id: '4', isFree: false },
-    { id: '5', isFree: false },
-    { id: '6', isFree: false },
-];
-
-export default function StoryGrid({ userId, isPremium }: { userId: string, isPremium: boolean }) {
+export default function StoryGrid({
+    userId,
+    isPremium,
+    stories,
+}: {
+    userId: string;
+    isPremium: boolean;
+    stories: StorySummary[];
+}) {
     const t = useTranslations('Stories');
     const { isDebugMode, isLoaded } = useTokenSystem(userId);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {STORIES.map((story) => {
+            {stories.map((story) => {
                 // To prevent layout shift hydration mismatch, we default to the server state 
                 // but unlock if debug mode or premium is confirmed
                 const isLocked = !story.isFree && (!isLoaded || (!isDebugMode && !isPremium));
@@ -47,7 +47,7 @@ export default function StoryGrid({ userId, isPremium }: { userId: string, isPre
                         </div>
 
                         <h3 className={`text-xl font-bold mb-3 tracking-wide ${isLocked ? 'text-archive-muted-deep' : 'text-archive-text'}`}>
-                            {t(`list.${story.id}`)}
+                            {story.title}
                         </h3>
 
                         {!isLocked && (
