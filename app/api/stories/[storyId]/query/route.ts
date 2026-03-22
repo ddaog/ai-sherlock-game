@@ -881,7 +881,7 @@ function buildCharacterResponse(display: StoryDisplayConfig): string {
     ...characters.flatMap((character, index) => [
       "",
       `${index + 1}. ${character.name} | ${character.role}`,
-      ...character.ascii,
+      ...(character.ascii ?? []),
       `- ${character.brief}`,
     ]),
   ].join("\n");
