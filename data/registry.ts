@@ -17,6 +17,34 @@ export interface StoryDisplayConfig {
         focus: string[];
         details?: string[];
         queryHints?: string[];
+        layout?: {
+            bands?: {
+                id: string;
+                label?: string;
+                x: number;
+                y: number;
+                w: number;
+                h: number;
+            }[];
+            rooms?: {
+                id: string;
+                label: string;
+                x: number;
+                y: number;
+                w: number;
+                h: number;
+            }[];
+            pins?: {
+                id: string;
+                x: number;
+                y: number;
+                title: string;
+                subtitle?: string;
+                meta?: string;
+                status?: string;
+                featured?: boolean;
+            }[];
+        };
     };
     ASCII_CHARACTERS?: {
         name: string;

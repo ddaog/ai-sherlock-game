@@ -13,6 +13,8 @@ import { Link } from '@/lib/i18n/routing';
 const MAX_HYPOTHESES = 5;
 const MAX_HINTS = 3;
 const SLASH_COMMANDS = ["/가설", "/추리", "/힌트", "/포기", "/현장", "/인물", "/단서"];
+type SceneConfig = NonNullable<StoryDisplayConfig["ASCII_SCENE"]>;
+type SceneLayout = NonNullable<SceneConfig["layout"]>;
 
 const getHintDesc = (hintCount: number) => {
     if (hintCount >= 3) return "사용불가";
@@ -24,7 +26,7 @@ function getSlashCommands(hintCount: number) {
         { cmd: "/가설", desc: "가설 기록" },
         { cmd: "/추리", desc: "결론 제출" },
         { cmd: "/힌트", desc: `힌트 (${getHintDesc(hintCount)})` },
-        { cmd: "/현장", desc: "현장 ASCII 스캔" },
+        { cmd: "/현장", desc: "현장 레이아웃 보기" },
         { cmd: "/인물", desc: "인물 파일 보기" },
     ];
     if (hintCount >= MAX_HINTS) {
@@ -104,6 +106,138 @@ function queryIncludesRevealTerm(query: string, terms: string[]) {
         const normalizedTerm = normalizeRevealText(term);
         return normalizedTerm.length > 0 && normalizedQuery.includes(normalizedTerm);
     });
+}
+
+function formatSourceLabel(sourceMd?: string) {
+    if (!sourceMd) return "Inline ASCII";
+    return sourceMd.replace(/\.md$/i, "").replace(/[-_]/g, " ");
+}
+
+function getSafePercent(value: number) {
+    return `${Math.min(100, Math.max(0, value))}%`;
+}
+
+function SceneLayoutBoard({
+    scene,
+    victim,
+    aliases = [],
+}: {
+    scene: SceneConfig;
+    victim: string;
+    aliases?: string[];
+}) {
+    const layout = scene.layout;
+    if (!layout) return null;
+
+    const featuredPin = layout.pins?.find((pin) => pin.featured) ?? layout.pins?.[0];
+    const secondaryPins = (layout.pins ?? []).filter((pin) => pin.id !== featuredPin?.id);
+
+    return (
+        <div className="rounded-sm border border-[#273246] bg-[#0b1220] p-3 md:p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.04)]">
+            <div className="relative mx-auto aspect-[1.46/1] w-full overflow-hidden rounded-sm border border-[#334155] bg-[linear-gradient(180deg,#111827_0%,#0f172a_100%)]">
+                <div className="absolute inset-[2.5%] border border-[#334155]/80" />
+
+                {(layout.bands ?? []).map((band) => (
+                    <div
+                        key={band.id}
+                        className="absolute border border-[#1f2a3d] bg-[#151b2d]/95"
+                        style={{
+                            left: getSafePercent(band.x),
+                            top: getSafePercent(band.y),
+                            width: getSafePercent(band.w),
+                            height: getSafePercent(band.h),
+                        }}
+                    >
+                        {band.label ? (
+                            <div className="absolute inset-y-0 left-4 flex items-center">
+                                <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#8390ab]">
+                                    {band.label}
+                                </span>
+                            </div>
+                        ) : null}
+                    </div>
+                ))}
+
+                {(layout.rooms ?? []).map((room) => (
+                    <div
+                        key={room.id}
+                        className="absolute border border-[#364257] bg-[#1b2235]/96 px-2 py-3 text-center shadow-[inset_0_0_0_1px_rgba(148,163,184,0.04)]"
+                        style={{
+                            left: getSafePercent(room.x),
+                            top: getSafePercent(room.y),
+                            width: getSafePercent(room.w),
+                            height: getSafePercent(room.h),
+                        }}
+                    >
+                        <div className="flex h-full items-center justify-center">
+                            <span className="text-[11px] font-semibold leading-snug text-[#b9c4da] md:text-[14px]">
+                                {highlightVictim(room.label, victim, aliases)}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+
+                {secondaryPins.map((pin) => (
+                    <div
+                        key={pin.id}
+                        className="absolute -translate-x-1/2 -translate-y-1/2"
+                        style={{ left: getSafePercent(pin.x), top: getSafePercent(pin.y) }}
+                    >
+                        <div className="flex flex-col items-center gap-1.5">
+                            <div className="h-7 w-[3px] rounded-full bg-[#f59e0b]" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-[#f59e0b] shadow-[0_0_0_4px_rgba(245,158,11,0.12)]" />
+                            <div className="rounded-sm border border-[#4b5563] bg-[#101827]/92 px-2 py-1 text-center">
+                                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#f8b84a]">
+                                    {pin.title}
+                                </p>
+                                {pin.subtitle ? (
+                                    <p className="mt-1 text-[10px] text-[#c4ccdb]">
+                                        {highlightVictim(pin.subtitle, victim, aliases)}
+                                    </p>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {featuredPin ? (
+                    <div
+                        className="absolute -translate-x-1/2"
+                        style={{ left: getSafePercent(featuredPin.x), top: getSafePercent(featuredPin.y) }}
+                    >
+                        <div className="flex flex-col items-center">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#fb7185]/40 bg-[#fb7185]/25 shadow-[0_0_0_6px_rgba(251,113,133,0.08)]">
+                                <div className="h-2.5 w-2.5 rounded-full bg-[#fb7185]" />
+                            </div>
+                            <div className="mt-2 h-7 w-[2px] bg-[#fb7185]/80" />
+                            <div className="mt-2 w-[178px] rounded-2xl border border-[#334155] bg-[#0f172a]/98 px-4 py-4 shadow-xl md:w-[210px]">
+                                <p className="text-center text-[11px] font-black text-white md:text-[14px]">
+                                    {highlightVictim(featuredPin.title, victim, aliases)}
+                                </p>
+                                {featuredPin.subtitle ? (
+                                    <p className="mt-2 text-center text-[11px] text-[#c5cfdf]">
+                                        {highlightVictim(featuredPin.subtitle, victim, aliases)}
+                                    </p>
+                                ) : null}
+                                {featuredPin.meta ? (
+                                    <p className="mt-2 text-center text-[11px] text-[#94a3b8]">
+                                        {highlightVictim(featuredPin.meta, victim, aliases)}
+                                    </p>
+                                ) : null}
+                                {featuredPin.status ? (
+                                    <div className="mt-3 flex justify-center">
+                                        <span className="rounded-full bg-[#fb7185] px-3 py-1 text-[10px] font-black tracking-[0.18em] text-white">
+                                            {featuredPin.status}
+                                        </span>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    );
 }
 
 function Typewriter({
@@ -689,8 +823,8 @@ export default function StoryPlayPage() {
                                         <h2 className="text-[15px] font-semibold text-white mt-1">{asciiScene.title}</h2>
                                         <p className="mt-2 text-[13px] leading-relaxed text-archive-muted">
                                             {isAreaScanOpen
-                                                ? "현장 스캔 원문과 포인트를 펼쳐서 보고 있습니다."
-                                                : "초기 화면에서는 간략 요약만 보여주고, 필요할 때만 상세 스캔을 여는 구조입니다."}
+                                                ? "현장 레이아웃과 핵심 포인트를 펼쳐서 보고 있습니다."
+                                                : "초기 화면에서는 간략 요약만 보여주고, 필요할 때만 상세 공간 파일을 여는 구조입니다."}
                                         </p>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-2">
@@ -715,9 +849,26 @@ export default function StoryPlayPage() {
 
                                 {isAreaScanOpen ? (
                                     <div className="space-y-4">
-                                        <pre className="overflow-x-auto rounded-sm border border-archive-border/60 bg-black/50 px-4 py-3 text-[11px] leading-[1.25] text-archive-muted">
-{asciiScene.art.join("\n")}
-                                        </pre>
+                                        {asciiScene.layout ? (
+                                            <SceneLayoutBoard
+                                                scene={asciiScene}
+                                                victim={VICTIM_NAME}
+                                                aliases={VICTIM_ALIASES}
+                                            />
+                                        ) : (
+                                            <div className="rounded-sm border border-archive-border/60 bg-black/25 px-4 py-4">
+                                                <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                    Scene Overview
+                                                </p>
+                                                <p className="mt-3 text-[13px] leading-relaxed text-archive-text/90">
+                                                    {highlightVictim(
+                                                        asciiScene.summary ?? asciiScene.details?.[0] ?? "현장 시각 정보가 준비되어 있습니다.",
+                                                        VICTIM_NAME,
+                                                        VICTIM_ALIASES
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
                                         {(asciiScene.details ?? []).length > 0 ? (
                                             <div className="space-y-3 rounded-sm border border-archive-border/60 bg-black/25 px-4 py-4">
                                                 <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
@@ -766,9 +917,9 @@ export default function StoryPlayPage() {
                                         <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
                                             [Persons Of Interest]
                                         </p>
-                                        <h2 className="text-[15px] font-semibold text-white mt-1">ASCII 인물 파일</h2>
+                                        <h2 className="text-[15px] font-semibold text-white mt-1">인물 파일</h2>
                                         <p className="mt-2 text-[13px] leading-relaxed text-archive-muted">
-                                            인물 텍스트를 작은 부가정보가 아니라 초상 자체가 먼저 읽히도록 재배치했습니다.
+                                            `profile-ascii/*.md` 초상화가 먼저 보이도록 정리하고, 인물 메모는 옆 패널에서 읽히게 구성했습니다.
                                         </p>
                                     </div>
                                     <button
@@ -841,7 +992,7 @@ export default function StoryPlayPage() {
                                                                     Render
                                                                 </p>
                                                                 <p className="mt-2 text-[13px] text-white">
-                                                                    Side Profile
+                                                                    {character.sourceMd ? "Profile MD" : "Inline ASCII"}
                                                                 </p>
                                                             </div>
                                                             <div className="rounded-sm border border-archive-border/60 bg-black/20 px-3 py-3">
@@ -849,7 +1000,7 @@ export default function StoryPlayPage() {
                                                                     Source
                                                                 </p>
                                                                 <p className="mt-2 text-[13px] text-white">
-                                                                    Text Portrait
+                                                                    {formatSourceLabel(character.sourceMd)}
                                                                 </p>
                                                             </div>
                                                         </div>

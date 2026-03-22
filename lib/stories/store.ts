@@ -111,6 +111,7 @@ function normalizeDisplay(value: unknown): StoryDisplayConfig {
           focus: display.ASCII_SCENE.focus ?? [],
           details: display.ASCII_SCENE.details ?? [],
           queryHints: display.ASCII_SCENE.queryHints ?? [],
+          layout: display.ASCII_SCENE.layout,
         }
       : undefined,
     ASCII_CHARACTERS: (display.ASCII_CHARACTERS ?? []).map((character) => ({
@@ -155,6 +156,69 @@ function resolveDisplayAssets(display: StoryDisplayConfig): StoryDisplayConfig {
       ...character,
       ascii: readProfileAsciiTemplate(character.sourceMd, character.ascii ?? []),
     })),
+  };
+}
+
+function pickArray<T>(overrideValue?: T[], fallbackValue?: T[]) {
+  return overrideValue && overrideValue.length > 0 ? overrideValue : fallbackValue;
+}
+
+function mergeDisplayWithFallback(
+  fallback: StoryDisplayConfig,
+  override: StoryDisplayConfig
+): StoryDisplayConfig {
+  const fallbackCharacters = fallback.ASCII_CHARACTERS ?? [];
+  const fallbackByName = new Map(
+    fallbackCharacters.map((character) => [character.name, character])
+  );
+  const overrideCharacters = override.ASCII_CHARACTERS ?? [];
+  const mergedCharacters = overrideCharacters.map((character) => {
+    const fallbackCharacter = fallbackByName.get(character.name);
+    return {
+      name: character.name || fallbackCharacter?.name || "",
+      role: character.role || fallbackCharacter?.role || "",
+      ascii: pickArray(character.ascii, fallbackCharacter?.ascii) ?? [],
+      sourceMd: character.sourceMd ?? fallbackCharacter?.sourceMd,
+      brief: character.brief || fallbackCharacter?.brief || "",
+      queryHints: pickArray(character.queryHints, fallbackCharacter?.queryHints) ?? [],
+    };
+  });
+
+  for (const fallbackCharacter of fallbackCharacters) {
+    if (!mergedCharacters.some((character) => character.name === fallbackCharacter.name)) {
+      mergedCharacters.push(fallbackCharacter);
+    }
+  }
+
+  const fallbackScene = fallback.ASCII_SCENE;
+  const overrideScene = override.ASCII_SCENE;
+
+  return {
+    VICTIM_NAME: override.VICTIM_NAME || fallback.VICTIM_NAME,
+    VICTIM_ALIASES: pickArray(override.VICTIM_ALIASES, fallback.VICTIM_ALIASES),
+    SYNOPSIS: {
+      short: override.SYNOPSIS?.short || fallback.SYNOPSIS.short,
+      full: override.SYNOPSIS?.full || fallback.SYNOPSIS.full,
+    },
+    defaultSuggestions: pickArray(override.defaultSuggestions, fallback.defaultSuggestions) ?? [],
+    CASE_HOOK: override.CASE_HOOK ?? fallback.CASE_HOOK,
+    ASCII_SCENE:
+      overrideScene || fallbackScene
+        ? {
+            title: overrideScene?.title || fallbackScene?.title || "",
+            summary: overrideScene?.summary ?? fallbackScene?.summary,
+            art: pickArray(overrideScene?.art, fallbackScene?.art) ?? [],
+            focus: pickArray(overrideScene?.focus, fallbackScene?.focus) ?? [],
+            details: pickArray(overrideScene?.details, fallbackScene?.details) ?? [],
+            queryHints:
+              pickArray(overrideScene?.queryHints, fallbackScene?.queryHints) ?? [],
+            layout: overrideScene?.layout ?? fallbackScene?.layout,
+          }
+        : undefined,
+    ASCII_CHARACTERS:
+      mergedCharacters.length > 0 ? mergedCharacters : fallback.ASCII_CHARACTERS ?? [],
+    INVESTIGATION_TRACKS:
+      pickArray(override.INVESTIGATION_TRACKS, fallback.INVESTIGATION_TRACKS) ?? [],
   };
 }
 
@@ -351,7 +415,18 @@ export async function getAdminStoryBundle(
   storyId: string
 ): Promise<AdminEditableStory | undefined> {
   const dbStory = await loadDbStoryBundle(storyId);
-  if (dbStory) return toAdminEditableStory(dbStory);
+  if (dbStory) {
+    const staticStory = await loadStaticStoryBundle(storyId);
+    if (!staticStory) return toAdminEditableStory(dbStory);
+
+    return toAdminEditableStory({
+      ...dbStory,
+      title: dbStory.title || staticStory.title,
+      isFree: dbStory.isFree ?? staticStory.isFree,
+      display: mergeDisplayWithFallback(staticStory.display, dbStory.display),
+      hasStaticFallback: true,
+    });
+  }
 
   const staticStory = await loadStaticStoryBundle(storyId);
   if (!staticStory) return undefined;
@@ -393,9 +468,16 @@ export async function getStoryBundle(
 ): Promise<StoryBundle | undefined> {
   const dbStory = await loadDbStoryBundle(storyId);
   if (dbStory) {
+    const staticStory = await loadStaticStoryBundle(storyId);
+    const mergedDisplay = staticStory
+      ? mergeDisplayWithFallback(staticStory.display, dbStory.display)
+      : dbStory.display;
+
     return {
       ...dbStory,
-      display: resolveDisplayAssets(dbStory.display),
+      title: dbStory.title || staticStory?.title || `Story ${storyId}`,
+      isFree: dbStory.isFree ?? staticStory?.isFree ?? false,
+      display: resolveDisplayAssets(mergedDisplay),
     };
   }
 

@@ -270,8 +270,8 @@ export default function StoryEditor({
                   </p>
                   <p className="mt-2 leading-relaxed">
                     `ASCII_SCENE.summary`, `ASCII_SCENE.details`, `ASCII_SCENE.queryHints`,
-                    `ASCII_CHARACTERS[].sourceMd`, `ASCII_CHARACTERS[].queryHints` 를 사용하면
-                    공간/인물 파일 노출 시점과 md 기반 초상화를 admin에서 직접 관리할 수 있습니다.
+                    `ASCII_SCENE.layout`, `ASCII_CHARACTERS[].sourceMd`, `ASCII_CHARACTERS[].queryHints`
+                    를 사용하면 공간 레이아웃, 노출 시점, md 기반 초상화를 admin에서 직접 관리할 수 있습니다.
                   </p>
                 </div>
               )}

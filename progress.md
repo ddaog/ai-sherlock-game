@@ -13,4 +13,6 @@ Original prompt: 나랑 실제 게임 플레이의 재미를 끌어올려볼 수
 - 2026-03-22: Story 1 주요 인물 4명을 사용자 제공 ASCII 초상화로 교체함.
 - 2026-03-22: 플레이 화면에서 `Investigation Board` 노출을 제거하고, `Area Scan`을 접힘 패널로 바꾸고, `Persons Of Interest`를 초상 중심 카드 UI로 재구성함.
 - 2026-03-22: `profile-ascii/*.md` 템플릿을 인물 초상화 소스로 연결하고, 인물/공간 파일은 관련 조사 후에만 노출되도록 reveal 로직과 admin용 display 필드를 추가함.
+- 2026-03-22: `Area Scan`의 ASCII 출력 대신 Story 1 전용 플로어플랜 레이아웃 UI를 추가하고, `/현장` 서버 응답도 텍스트형 상세 묘사로 전환함.
+- 2026-03-22: `profile-ascii` 자산을 앱 루트 내부에도 복사하고, DB override가 오래된 경우에도 `sourceMd`/`layout` 같은 정적 기본 display 필드를 병합하도록 store를 보강함.
 - 2026-03-22: `TRANSPILE_OK` 확인. 전체 `next build`와 광범위 타입체크는 이 환경에서 비정상적으로 오래 걸려 완료 상태를 확인하지 못함.

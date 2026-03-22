@@ -859,12 +859,15 @@ function buildSceneResponse(display: StoryDisplayConfig): string {
     return "[AREA_SCAN]\n현장 스캔 데이터가 아직 등록되지 않았습니다.";
   }
 
+  const overview = scene.summary ?? scene.details?.[0];
   return [
     "[AREA_SCAN]",
     scene.title,
     "",
-    ...scene.art,
-    "",
+    ...(overview ? [overview, ""] : []),
+    ...(scene.details?.length
+      ? ["DETAIL:", ...scene.details.map((item) => `- ${item}`), ""]
+      : []),
     "FOCUS:",
     ...scene.focus.map((item) => `- ${item}`),
   ].join("\n");

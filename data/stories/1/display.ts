@@ -24,6 +24,50 @@ export const CASE_HOOK =
 export const ASCII_SCENE = {
     title: "별관 3층 야간 스캔",
     summary: "잠긴 별관 3층 복도, 집무실 앞에서 동선이 끊기고 발견 지점은 복도 중앙에 남아 있다.",
+    layout: {
+        bands: [
+            { id: "hallway", label: "3층 복도", x: 0, y: 37, w: 100, h: 16 },
+        ],
+        rooms: [
+            { id: "meeting", label: "회의실", x: 3, y: 5, w: 35, h: 32 },
+            { id: "office", label: "김도윤 집무실", x: 39, y: 5, w: 43, h: 32 },
+            { id: "storage", label: "자료보관실", x: 83.5, y: 5, w: 13.5, h: 32 },
+            { id: "audit", label: "감사팀 임시실", x: 3, y: 59, w: 35, h: 33 },
+            { id: "lounge", label: "응접실", x: 39, y: 59, w: 20.5, h: 33 },
+            { id: "pantry", label: "탕비실", x: 60.8, y: 59, w: 21.2, h: 33 },
+            { id: "restroom", label: "화장실", x: 83.5, y: 59, w: 13.5, h: 33 },
+        ],
+        pins: [
+            {
+                id: "victim",
+                x: 24,
+                y: 23,
+                title: "김도윤 발견 지점",
+                subtitle: "Target: 별관 3층 복도",
+                meta: "22:45 강태우 최초 발견",
+                status: "위험",
+                featured: true,
+            },
+            {
+                id: "tumbler",
+                x: 59,
+                y: 29,
+                title: "텀블러",
+                subtitle: "집무실 내부",
+                meta: "수면유도 성분 검출",
+                status: "증거",
+            },
+            {
+                id: "safe",
+                x: 59,
+                y: 67,
+                title: "금고 / USB",
+                subtitle: "집무실 안쪽",
+                meta: "자료·하드웨어 지갑",
+                status: "핵심",
+            },
+        ],
+    },
     art: [
         "           [ELEVATOR]",
         "               ||",
