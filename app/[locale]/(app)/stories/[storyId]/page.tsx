@@ -94,6 +94,18 @@ function formatInputWithCommands(text: string) {
     );
 }
 
+function normalizeRevealText(value: string) {
+    return value.toLowerCase().replace(/\s+/g, "");
+}
+
+function queryIncludesRevealTerm(query: string, terms: string[]) {
+    const normalizedQuery = normalizeRevealText(query);
+    return terms.some((term) => {
+        const normalizedTerm = normalizeRevealText(term);
+        return normalizedTerm.length > 0 && normalizedQuery.includes(normalizedTerm);
+    });
+}
+
 function Typewriter({
     text,
     onType,
@@ -169,6 +181,8 @@ export default function StoryPlayPage() {
     const [commandPaletteIndex, setCommandPaletteIndex] = useState(0);
     const [isSynopsisOpen, setIsSynopsisOpen] = useState(true);
     const [isAreaScanOpen, setIsAreaScanOpen] = useState(false);
+    const [hasSceneIntel, setHasSceneIntel] = useState(false);
+    const [hasCharacterIntel, setHasCharacterIntel] = useState(false);
 
     // Solve Form States (Terminal Style)
     const [solveStep, setSolveStep] = useState<0 | 1 | 2 | 3>(0);
@@ -192,6 +206,8 @@ export default function StoryPlayPage() {
 
     useEffect(() => {
         setIsAreaScanOpen(false);
+        setHasSceneIntel(false);
+        setHasCharacterIntel(false);
     }, [storyId]);
 
     useEffect(() => {
@@ -270,6 +286,44 @@ export default function StoryPlayPage() {
         setPendingReset(false);
         setShowCommandPalette(false);
         setIsAreaScanOpen(false);
+        setHasSceneIntel(false);
+        setHasCharacterIntel(false);
+    };
+
+    const maybeRevealArchives = (query: string) => {
+        const trimmed = query.trim();
+        if (!trimmed) return;
+
+        if (/^\/현장\b/i.test(trimmed)) {
+            setHasSceneIntel(true);
+            setIsAreaScanOpen(true);
+        }
+
+        if (/^\/인물\b/i.test(trimmed)) {
+            setHasCharacterIntel(true);
+        }
+
+        const scene = displayConfig?.ASCII_SCENE;
+        const sceneTerms = scene
+            ? [...new Set([scene.title, ...(scene.queryHints ?? [])].filter(Boolean))]
+            : [];
+
+        const characterTerms = [...new Set(
+            (displayConfig?.ASCII_CHARACTERS ?? []).flatMap((character) => [
+                character.name,
+                character.role,
+                ...character.role.split("/").map((part) => part.trim()),
+                ...(character.queryHints ?? []),
+            ]).filter(Boolean)
+        )];
+
+        if (sceneTerms.length > 0 && queryIncludesRevealTerm(trimmed, sceneTerms)) {
+            setHasSceneIntel(true);
+        }
+
+        if (characterTerms.length > 0 && queryIncludesRevealTerm(trimmed, characterTerms)) {
+            setHasCharacterIntel(true);
+        }
     };
 
     const handlePaywallUpgrade = (plan: 'lestrade' | 'sherlock' | 'holmes') => {
@@ -349,6 +403,7 @@ export default function StoryPlayPage() {
             return;
         }
 
+        maybeRevealArchives(trimmed);
         setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
         setShowCommandPalette(false);
         setInput("");
@@ -624,7 +679,7 @@ export default function StoryPlayPage() {
                             </div>
                         ) : null}
 
-                        {asciiScene ? (
+                        {asciiScene && hasSceneIntel ? (
                             <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -663,6 +718,18 @@ export default function StoryPlayPage() {
                                         <pre className="overflow-x-auto rounded-sm border border-archive-border/60 bg-black/50 px-4 py-3 text-[11px] leading-[1.25] text-archive-muted">
 {asciiScene.art.join("\n")}
                                         </pre>
+                                        {(asciiScene.details ?? []).length > 0 ? (
+                                            <div className="space-y-3 rounded-sm border border-archive-border/60 bg-black/25 px-4 py-4">
+                                                <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                    Spatial Detail
+                                                </p>
+                                                {(asciiScene.details ?? []).map((line) => (
+                                                    <p key={line} className="text-[13px] leading-relaxed text-archive-text/90">
+                                                        {highlightVictim(line, VICTIM_NAME, VICTIM_ALIASES)}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        ) : null}
                                         <ul className="space-y-2 text-[13px] text-archive-text/90 leading-relaxed">
                                             {asciiScene.focus.map((item) => (
                                                 <li key={item} className="flex gap-2">
@@ -678,7 +745,11 @@ export default function StoryPlayPage() {
                                             Archive Summary
                                         </p>
                                         <p className="mt-2 text-[13px] leading-relaxed text-archive-text/90">
-                                            {highlightVictim(asciiScene.focus[0] ?? "현장 스캔 데이터가 준비되어 있습니다.", VICTIM_NAME, VICTIM_ALIASES)}
+                                            {highlightVictim(
+                                                asciiScene.summary ?? asciiScene.details?.[0] ?? asciiScene.focus[0] ?? "현장 스캔 데이터가 준비되어 있습니다.",
+                                                VICTIM_NAME,
+                                                VICTIM_ALIASES
+                                            )}
                                         </p>
                                         <p className="mt-3 font-mono text-[11px] text-archive-muted-deep">
                                             포인트 {asciiScene.focus.length}개 준비됨
@@ -688,7 +759,7 @@ export default function StoryPlayPage() {
                             </section>
                         ) : null}
 
-                        {asciiCharacters.length > 0 ? (
+                        {asciiCharacters.length > 0 && hasCharacterIntel ? (
                             <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-5">
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
@@ -738,9 +809,20 @@ export default function StoryPlayPage() {
 
                                                 <div className="grid gap-4 lg:grid-cols-[minmax(0,200px)_1fr]">
                                                     <div className="flex min-h-[276px] items-center justify-center rounded-sm border border-archive-border/70 bg-[#0a0a0a] px-3 py-4 shadow-inner">
-                                                        <pre className="overflow-x-auto font-mono text-[8px] leading-[1.03] text-[#d6d0c5] sm:text-[8.5px]">
-{character.ascii.join("\n")}
-                                                        </pre>
+                                                        {(character.ascii ?? []).length > 0 ? (
+                                                            <pre className="overflow-x-auto font-mono text-[8px] leading-[1.03] text-[#d6d0c5] sm:text-[8.5px]">
+{character.ascii?.join("\n")}
+                                                            </pre>
+                                                        ) : (
+                                                            <div className="px-4 text-center">
+                                                                <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-archive-muted-deep">
+                                                                    Portrait Missing
+                                                                </p>
+                                                                <p className="mt-2 text-[13px] text-archive-muted">
+                                                                    admin에서 `sourceMd` 또는 `ascii`를 등록하면 이곳에 초상화가 나타납니다.
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     <div className="flex flex-col justify-between gap-4">
@@ -787,7 +869,7 @@ export default function StoryPlayPage() {
                             <p><span className="font-mono text-archive-accent font-bold">/가설</span> 가설 기록. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/가설 박지훈이 범인인 것 같아</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/추리</span> 결론 제출. 예: <span className="font-mono truncate text-archive-accent opacity-80 text-[13px] md:text-[14px]">/추리 박지훈이 비자금 때문...</span></p>
                             <p><span className="font-mono text-archive-accent font-bold">/힌트</span> 적당한 힌트 제공 (3회 제한)</p>
-                            <p><span className="font-mono text-archive-accent font-bold">/현장</span>, <span className="font-mono text-archive-accent font-bold">/인물</span> 로 ASCII 스캔과 인물 파일을 다시 호출할 수 있습니다.</p>
+                            <p>인물이나 공간을 먼저 질문하면 관련 파일이 열립니다. 필요하면 <span className="font-mono text-archive-accent font-bold">/현장</span>, <span className="font-mono text-archive-accent font-bold">/인물</span> 로 직접 호출할 수 있습니다.</p>
                         </div>
                     )}
 

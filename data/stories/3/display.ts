@@ -19,6 +19,7 @@ export const CASE_HOOK =
 
 export const ASCII_SCENE = {
     title: "지하 서버실 폐쇄망",
+    summary: "에어록 안쪽 랙 사이 바닥에 CEO가 쓰러져 있고, 폐쇄망이어야 할 공간 한편에 숨겨진 라우터가 박혀 있다.",
     art: [
         "  [B1 ACCESS]=====[AIRLOCK]",
         "         ||            ||",
@@ -30,6 +31,12 @@ export const ASCII_SCENE = {
         "   |   hidden router (*)    |",
         "   '------------------------'",
     ],
+    details: [
+        "지하 접근문을 지나면 좁은 에어록과 차가운 서버실이 이어지고, 랙 사이 통로는 한 사람이 겨우 비켜 설 정도로 빽빽하다.",
+        "찰스가 쓰러진 위치는 랙 중앙 통로라서 자연사처럼 보이지만, 시선이 닿지 않는 하부 배선 쪽에 숨겨진 무선 라우터가 공간의 성격을 뒤집는다.",
+        "폐쇄망 서버실답게 소리와 빛이 억제된 공간이라 외부 흔적은 적지만, 한 번의 출입 기록과 기기 로그만으로도 조작 준비 흔적을 복원할 수 있다.",
+    ],
+    queryHints: ["현장", "공간", "서버실", "지하", "폐쇄망", "에어록", "라우터", "랙"],
     focus: [
         "문은 찰스의 생체 정보로 단 한 번 열렸다. 내부 조작보다 외부 준비 가능성을 먼저 봐야 한다.",
         "폐쇄망이어야 할 공간에 숨겨진 무선 라우터가 있었다.",
@@ -41,6 +48,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "찰스 바스커빌",
         role: "피해자 / CEO",
+        sourceMd: "old man.md",
+        queryHints: ["찰스 바스커빌", "찰스", "CEO", "피해자"],
         ascii: [
             "   .-''''-.",
             "  /  .--.  \\",
@@ -55,6 +64,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "잭 스태플턴",
         role: "수석 AI 리서처",
+        sourceMd: "businessmen.md",
+        queryHints: ["잭 스태플턴", "잭", "AI 리서처", "리서처"],
         ascii: [
             "   .------.",
             "  /  ____  \\",
@@ -69,6 +80,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "베릴 스태플턴",
         role: "재무 이사",
+        sourceMd: "women.md",
+        queryHints: ["베릴 스태플턴", "베릴", "재무 이사", "재무"],
         ascii: [
             "   .-====-.",
             "  /  .--.  \\",
@@ -83,6 +96,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "제임스 모티머",
         role: "주치의",
+        sourceMd: "men.md",
+        queryHints: ["제임스 모티머", "모티머", "주치의", "의사"],
         ascii: [
             "   .-''''-.",
             "  /  ____  \\",

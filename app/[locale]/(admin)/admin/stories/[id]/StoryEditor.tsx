@@ -229,7 +229,7 @@ export default function StoryEditor({
             <ul className="space-y-4 relative z-10">
               {[
                 { title: "Logic", desc: "Define rules and win conditions." },
-                { title: "UI", desc: "Customize colors and visual themes." },
+                { title: "UI", desc: "Manage reveal timing, scene detail, and profile md sources." },
                 { title: "Data", desc: "Populate clues and evidence strings." },
                 { title: "Vector", desc: "Input AI-ready search embeddings." }
               ].map((item) => (
@@ -263,6 +263,18 @@ export default function StoryEditor({
             </div>
 
             <div className="flex-1 p-0 relative group">
+              {activeTab === "display" && (
+                <div className="mx-6 mt-6 rounded-2xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/80 dark:bg-blue-500/5 px-5 py-4 text-[12px] text-slate-700 dark:text-zinc-300 shadow-sm">
+                  <p className="font-black uppercase tracking-[0.18em] text-[10px] text-blue-600 dark:text-blue-400">
+                    Display JSON Hints
+                  </p>
+                  <p className="mt-2 leading-relaxed">
+                    `ASCII_SCENE.summary`, `ASCII_SCENE.details`, `ASCII_SCENE.queryHints`,
+                    `ASCII_CHARACTERS[].sourceMd`, `ASCII_CHARACTERS[].queryHints` 를 사용하면
+                    공간/인물 파일 노출 시점과 md 기반 초상화를 admin에서 직접 관리할 수 있습니다.
+                  </p>
+                </div>
+              )}
               <div className="absolute top-4 right-6 text-[10px] font-black text-slate-300 dark:text-zinc-700 uppercase tracking-widest z-10">
                 JSON Content
               </div>

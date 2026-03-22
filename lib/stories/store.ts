@@ -68,6 +68,10 @@ const getEvidencePath = (storyId: string) =>
   path.join(process.cwd(), "data", "stories", storyId, "evidence.json");
 const getEmbeddingsPath = (storyId: string) =>
   path.join(process.cwd(), "data", "stories", storyId, "embeddings.json");
+const PROFILE_ASCII_ROOTS = [
+  path.join(process.cwd(), "profile-ascii"),
+  path.join(process.cwd(), "..", "profile-ascii"),
+];
 
 function canUseStoriesDb() {
   return Boolean(
@@ -99,9 +103,58 @@ function normalizeDisplay(value: unknown): StoryDisplayConfig {
     SYNOPSIS: display.SYNOPSIS ?? { short: "", full: "" },
     defaultSuggestions: display.defaultSuggestions ?? [],
     CASE_HOOK: display.CASE_HOOK,
-    ASCII_SCENE: display.ASCII_SCENE,
-    ASCII_CHARACTERS: display.ASCII_CHARACTERS ?? [],
+    ASCII_SCENE: display.ASCII_SCENE
+      ? {
+          title: display.ASCII_SCENE.title ?? "",
+          summary: display.ASCII_SCENE.summary,
+          art: display.ASCII_SCENE.art ?? [],
+          focus: display.ASCII_SCENE.focus ?? [],
+          details: display.ASCII_SCENE.details ?? [],
+          queryHints: display.ASCII_SCENE.queryHints ?? [],
+        }
+      : undefined,
+    ASCII_CHARACTERS: (display.ASCII_CHARACTERS ?? []).map((character) => ({
+      name: character.name ?? "",
+      role: character.role ?? "",
+      ascii: character.ascii ?? [],
+      sourceMd: character.sourceMd,
+      brief: character.brief ?? "",
+      queryHints: character.queryHints ?? [],
+    })),
     INVESTIGATION_TRACKS: display.INVESTIGATION_TRACKS ?? [],
+  };
+}
+
+function readProfileAsciiTemplate(sourceMd?: string, fallback: string[] = []): string[] {
+  if (!sourceMd) return fallback;
+
+  for (const root of PROFILE_ASCII_ROOTS) {
+    const resolvedPath = path.resolve(root, sourceMd);
+    if (!resolvedPath.startsWith(root)) {
+      continue;
+    }
+
+    try {
+      const file = fs.readFileSync(resolvedPath, "utf-8");
+      return file
+        .split(/\r?\n/)
+        .map((line) => line.replace(/\s+$/g, ""))
+        .filter((line) => line.length > 0);
+    } catch {
+      continue;
+    }
+  }
+
+  return fallback;
+}
+
+function resolveDisplayAssets(display: StoryDisplayConfig): StoryDisplayConfig {
+  return {
+    ...display,
+    ASCII_CHARACTERS: (display.ASCII_CHARACTERS ?? []).map((character) => ({
+      ...character,
+      ascii: readProfileAsciiTemplate(character.sourceMd, character.ascii ?? []),
+    })),
   };
 }
 
@@ -340,10 +393,19 @@ export async function getStoryBundle(
 ): Promise<StoryBundle | undefined> {
   const dbStory = await loadDbStoryBundle(storyId);
   if (dbStory) {
-    return dbStory;
+    return {
+      ...dbStory,
+      display: resolveDisplayAssets(dbStory.display),
+    };
   }
 
-  return loadStaticStoryBundle(storyId);
+  const staticStory = await loadStaticStoryBundle(storyId);
+  if (!staticStory) return undefined;
+
+  return {
+    ...staticStory,
+    display: resolveDisplayAssets(staticStory.display),
+  };
 }
 
 export async function getStoryConfig(

@@ -23,6 +23,7 @@ export const CASE_HOOK =
 
 export const ASCII_SCENE = {
     title: "별관 3층 야간 스캔",
+    summary: "잠긴 별관 3층 복도, 집무실 앞에서 동선이 끊기고 발견 지점은 복도 중앙에 남아 있다.",
     art: [
         "           [ELEVATOR]",
         "               ||",
@@ -36,6 +37,13 @@ export const ASCII_SCENE = {
         "  ||                                 ||",
         "  =====================================",
     ],
+    details: [
+        "엘리베이터에서 내리면 긴 복도가 일자로 뻗어 있고, 왼편에는 회의실, 끝 쪽에는 김도윤의 집무실이 붙어 있다.",
+        "복도 바닥은 야간 청소 이후라 흔적이 잘 남는 편이고, 집무실 앞 구간만 CCTV 사각과 겹쳐 시선이 비는 짧은 틈이 생긴다.",
+        "발견 지점은 집무실 문 바로 앞이 아니라 복도 쪽으로 조금 밀려 나와 있어, 내부에서 공격이 시작된 뒤 바깥으로 기어 나온 장면을 떠올리게 한다.",
+        "텀블러와 금고가 같은 집무실 안에 있었고, 회의실과 복도 사이 시야 차단이 있어 누가 얼마나 가까이 있었는지 동선 복기가 중요하다.",
+    ],
+    queryHints: ["현장", "공간", "별관", "3층", "복도", "집무실", "회의실", "금고", "텀블러"],
     focus: [
         "21:12 박지훈 입실, 21:18 퇴실 동선이 집무실 앞에서 끊긴다.",
         "21:38 이후 이서연이 CCTV 사각지대로 사라진 구간을 재구성해야 한다.",
@@ -47,6 +55,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "박지훈",
         role: "감사팀장",
+        sourceMd: "businessmen.md",
+        queryHints: ["박지훈", "감사팀장", "감사팀"],
         ascii: [
             "                  .*+",
             "               %@@@@%@@@",
@@ -75,6 +85,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "이서연",
         role: "재무부장",
+        sourceMd: "women copy.md",
+        queryHints: ["이서연", "재무부장", "재무", "회계"],
         ascii: [
             "                  .*+",
             "               %@@@@%@@@",
@@ -103,6 +115,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "김도윤",
         role: "피해자 / CFO",
+        sourceMd: "big men.md",
+        queryHints: ["김도윤", "CFO", "피해자", "재무책임자"],
         ascii: [
             "                  .*+",
             "               %@@@@%@@@",
@@ -131,6 +145,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "강태우",
         role: "시설부 / 최초 발견자",
+        sourceMd: "men.md",
+        queryHints: ["강태우", "시설부", "최초 발견자", "목격자"],
         ascii: [
             "                  .*+",
             "               %@@@@%@@@",

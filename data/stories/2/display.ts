@@ -19,6 +19,7 @@ export const CASE_HOOK =
 
 export const ASCII_SCENE = {
     title: "브릭스톤 로드 3번지",
+    summary: "안개 낀 빈집 거실 안에 시신, 발자국, 반지, 붉은 낙서가 흩어져 있고 사건은 저택 밖 104번 마차로 이어진다.",
     art: [
         "        fog/////              ",
         "      .-------------.         ",
@@ -30,6 +31,12 @@ export const ASCII_SCENE = {
         "    ||____door_______||       ",
         "      \\__road__104__/         ",
     ],
+    details: [
+        "빈집 내부는 가구가 거의 없고 넓은 거실 한가운데에 시신이 남아 있어, 누군가 의도적으로 무대를 비워 둔 듯한 인상을 준다.",
+        "문 쪽에는 진흙이 묻은 발자국이 겹치고, 벽면 붉은 낙서와 작은 반지 하나가 서로 다른 시대의 단서를 한 방에 밀어 넣는다.",
+        "창밖으로는 안개와 도로가 맞닿아 있고, 현장 자체보다 저택을 빠져나간 104번 마차의 흔적이 공간 해석의 핵심 축이 된다.",
+    ],
+    queryHints: ["현장", "공간", "브릭스톤", "저택", "빈집", "거실", "104번 마차", "마차"],
     focus: [
         "거실의 발자국과 저택 앞 바퀴 자국은 한 사람의 접근이 아니라 '연출'의 냄새를 풍긴다.",
         "방 안에는 가구가 거의 없지만, 반지와 낙서, 재가 남아 있다.",
@@ -41,6 +48,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "에녹 드레버",
         role: "피해자",
+        sourceMd: "big men.md",
+        queryHints: ["에녹 드레버", "드레버", "피해자"],
         ascii: [
             "   .-''''-.",
             "  /  .--.  \\",
@@ -55,6 +64,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "제퍼슨 호프",
         role: "104번 마부",
+        sourceMd: "men.md",
+        queryHints: ["제퍼슨 호프", "호프", "마부", "104번"],
         ascii: [
             "   .------.",
             "  /  ____  \\",
@@ -69,6 +80,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "조셉 스탠거슨",
         role: "비서",
+        sourceMd: "businessmen.md",
+        queryHints: ["조셉 스탠거슨", "스탠거슨", "비서"],
         ascii: [
             "   .-====-.",
             "  /  .--.  \\",
@@ -83,6 +96,8 @@ export const ASCII_CHARACTERS = [
     {
         name: "루시 페리어",
         role: "과거의 유령",
+        sourceMd: "women copy.md",
+        queryHints: ["루시 페리어", "루시", "L.F.", "과거의 유령"],
         ascii: [
             "   .-''''-.",
             "  /  .--.  \\",

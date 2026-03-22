@@ -12,14 +12,19 @@ export interface StoryDisplayConfig {
     CASE_HOOK?: string;
     ASCII_SCENE?: {
         title: string;
+        summary?: string;
         art: string[];
         focus: string[];
+        details?: string[];
+        queryHints?: string[];
     };
     ASCII_CHARACTERS?: {
         name: string;
         role: string;
-        ascii: string[];
+        ascii?: string[];
+        sourceMd?: string;
         brief: string;
+        queryHints?: string[];
     }[];
     INVESTIGATION_TRACKS?: {
         id: string;
