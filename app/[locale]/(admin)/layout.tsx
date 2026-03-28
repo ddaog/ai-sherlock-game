@@ -30,7 +30,7 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 flex text-slate-900 dark:text-zinc-100 selection:bg-blue-100 dark:selection:bg-blue-900/30">
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hidden md:flex flex-col sticky top-0 h-screen z-30 shadow-sm">
-        <div className="p-6 border-b border-slate-100 dark:border-zinc-800/50 flex items-center justify-between">
+        <div className="p-6 flex items-center justify-between">
           <Link href="/admin/stories" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-200 dark:shadow-none transition-transform group-hover:scale-105">
               S
@@ -65,7 +65,7 @@ export default async function AdminLayout({
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100 dark:border-zinc-800/50">
+        <div className="p-4">
           <div className="flex items-center gap-3.5 px-3 py-3 mb-3 bg-slate-50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800/50">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs font-black shadow-sm">
               {user.email?.[0].toUpperCase()}
@@ -94,7 +94,7 @@ export default async function AdminLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="h-16 border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-20">
+        <header className="h-16 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-20">
           <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
             <span className="text-slate-400 dark:text-zinc-500">Workspace</span>
             <ChevronRight className="w-3 h-3 text-slate-300 dark:text-zinc-700" />

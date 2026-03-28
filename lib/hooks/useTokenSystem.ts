@@ -19,52 +19,49 @@ export function useTokenSystem(userId: string | undefined) {
             return;
         }
 
-        const checkTokens = () => {
-            const tokenKey = `sherlock_tokens_${userId}`;
-            const dateKey = `sherlock_last_reset_${userId}`;
-            const debugKey = `sherlock_debug_${userId}`;
-            const adCountKey = `sherlock_ad_watched_${userId}`;
+        const debugKey = `sherlock_debug_${userId}`;
+        const adCountKey = `sherlock_ad_watched_${userId}`;
+        const savedDebug = localStorage.getItem(debugKey) === 'true';
+        setIsDebugMode(savedDebug);
 
-            const savedTokens = localStorage.getItem(tokenKey);
-            const savedDate = localStorage.getItem(dateKey);
-            const savedDebug = localStorage.getItem(debugKey) === 'true';
-            const savedAdCount = localStorage.getItem(adCountKey);
-
-            setIsDebugMode(savedDebug);
-
-            const today = new Date().toISOString().split('T')[0];
-
-            if (savedDebug) {
-                setTokens(MAX_TOKENS);
-                setIsLoaded(true);
-                return;
-            }
-
-            if (!savedDate || !savedTokens) {
-                // First time user
-                localStorage.setItem(tokenKey, String(MAX_TOKENS));
-                localStorage.setItem(dateKey, today);
-                localStorage.setItem(adCountKey, "0");
-                setTokens(MAX_TOKENS);
-                setAdsWatched(0);
-            } else {
-                let currentTokens = parseInt(savedTokens, 10);
-                if (savedDate !== today) {
-                    // Different day, regenerate
-                    currentTokens = Math.min(currentTokens + DAILY_REGEN, MAX_TOKENS);
-                    localStorage.setItem(tokenKey, String(currentTokens));
-                    localStorage.setItem(dateKey, today);
-                    localStorage.setItem(adCountKey, "0");
-                    setAdsWatched(0);
-                } else {
-                    setAdsWatched(savedAdCount ? parseInt(savedAdCount, 10) : 0);
-                }
-                setTokens(currentTokens);
-            }
+        if (savedDebug) {
+            setTokens(MAX_TOKENS);
             setIsLoaded(true);
-        };
+            return;
+        }
 
-        checkTokens();
+        // Sync from server for authenticated users
+        fetch('/api/credits')
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+                if (data && typeof data.remaining === 'number') {
+                    setTokens(data.remaining);
+                    localStorage.setItem(`sherlock_tokens_${userId}`, String(data.remaining));
+                    localStorage.setItem(`sherlock_last_reset_${userId}`, new Date().toISOString().split('T')[0]);
+                } else {
+                    // Fallback to localStorage if server unavailable
+                    const tokenKey = `sherlock_tokens_${userId}`;
+                    const dateKey = `sherlock_last_reset_${userId}`;
+                    const savedTokens = localStorage.getItem(tokenKey);
+                    const savedDate = localStorage.getItem(dateKey);
+                    const today = new Date().toISOString().split('T')[0];
+                    if (!savedDate || !savedTokens) {
+                        setTokens(MAX_TOKENS);
+                    } else if (savedDate !== today) {
+                        setTokens(Math.min(parseInt(savedTokens, 10) + DAILY_REGEN, MAX_TOKENS));
+                    } else {
+                        setTokens(parseInt(savedTokens, 10));
+                    }
+                }
+            })
+            .catch(() => {
+                // Network error — keep localStorage value
+            })
+            .finally(() => {
+                const savedAdCount = localStorage.getItem(adCountKey);
+                setAdsWatched(savedAdCount ? parseInt(savedAdCount, 10) : 0);
+                setIsLoaded(true);
+            });
 
         // Listen for storage events in case of multiple tabs
         const handleStorage = (e: StorageEvent) => {
@@ -131,6 +128,15 @@ export function useTokenSystem(userId: string | undefined) {
         return true;
     }, [userId, adsWatched, tokens]);
 
+    // Sync token count from server (called after API responses with remainingCredits)
+    const syncTokens = useCallback((remaining: number) => {
+        if (isDebugMode) return;
+        setTokens(remaining);
+        if (userId) {
+            localStorage.setItem(`sherlock_tokens_${userId}`, String(remaining));
+        }
+    }, [userId, isDebugMode]);
+
     return {
         tokens,
         adsWatched,
@@ -139,6 +145,7 @@ export function useTokenSystem(userId: string | undefined) {
         decreaseToken,
         triggerDebugMode,
         setTokensForDebug,
-        claimAdReward
+        claimAdReward,
+        syncTokens,
     };
 }

@@ -11,8 +11,7 @@ export const polar = new Polar({
 export async function createCheckoutSession(successUrl: string, customerId: string, productId: string) {
     try {
         const session = await polar.checkouts.create({
-            // @ts-expect-error polar token is not required if secret is provided changed, user will inject correct product IDs
-            productId,
+            products: [productId],
             customerId,
             successUrl,
         });

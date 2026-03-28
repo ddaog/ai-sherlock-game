@@ -24,6 +24,9 @@ import {
 } from "@/lib/game/recordIds";
 import { parseSubmission } from "@/lib/game/submissionParser";
 import { gradeSubmission, isSolved } from "@/lib/game/grader";
+import { createClient } from "@/lib/supabase/server";
+import { getUserPlan } from "@/lib/entitlements/check";
+import { checkAndDecrementCredits } from "@/lib/credits";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 15;
@@ -80,7 +83,11 @@ CURRENT_HYPOTHESES에 나열된 가설 중, 이번 인용 기록(SOURCES)이 **�
 해당 없으면: HYPOTHESIS_IMPACT: (none)
 
 ## 오프토픽 질문 시
-RESPONSE: 사건 기록에 해당 요소는 등장하지 않습니다.
+사건과 전혀 무관한 질문(날씨, 요리, 스포츠, 잡담 등)이 들어오면:
+- 사용자가 물어본 내용을 짧게 언급하며 위트 있게 받아쳐 주세요. (예: "피자 배달 경로는 제 관할 밖입니다")
+- 단, 1~2문장 이내로 짧게.
+- 이후 자연스럽게 수사로 돌아오도록 유도하세요.
+RESPONSE: <사용자 질문을 반영한 짧고 위트 있는 거절 + 수사 복귀 유도>
 SUGGESTION:
 - 피해자의 사건 당일 동선은?
 - 현장에 남은 물증은?
@@ -108,6 +115,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ sto
   }
 
   const { storyId } = await params;
+
+  // Server-side credit check for authenticated non-premium users
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let remainingCredits: number | undefined;
+  if (user) {
+    const plan = await getUserPlan(user.id);
+    const isUnlimited = plan === 'watson' || plan === 'sherlock';
+    if (!isUnlimited) {
+      const result = await checkAndDecrementCredits(user.id);
+      if (!result.allowed) {
+        return NextResponse.json(
+          { error: "일일 질문 한도에 도달했습니다. 내일 다시 시도하거나 플랜을 업그레이드하세요.", remainingCredits: 0 },
+          { status: 429 }
+        );
+      }
+      remainingCredits = result.remaining;
+    }
+  }
+
   const config = await getStoryConfig(storyId);
   const display = await getStoryDisplay(storyId);
   if (!config || !display) {
@@ -201,6 +228,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ sto
   if (/^\/인물$/i.test(query.trim())) {
     return NextResponse.json({
       response: buildCharacterResponse(display),
+      sources: [],
+      suggestions: defaultSuggestions,
+      hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
+      seenRecordIds,
+      triggeredBadges,
+      solved: false,
+      sessionState: { solved: false, hintCount },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, embeddingTokens: 0, costUsd: 0, costKrw: 0 },
+    });
+  }
+
+  const characterQueryMatch = query.trim().match(/^\/인물\s+(.+)$/i);
+  if (characterQueryMatch) {
+    const targetName = characterQueryMatch[1].trim();
+    return NextResponse.json({
+      response: buildCharacterResponse(display, targetName),
       sources: [],
       suggestions: defaultSuggestions,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
@@ -464,6 +507,7 @@ ${config.ending.closedLine}`;
 
     return NextResponse.json({
       response: responseText,
+      grade,
       sources: [],
       suggestions: solved ? [] : finalNext,
       hypotheses: hypotheses.slice(0, MAX_HYPOTHESES),
@@ -592,7 +636,10 @@ ${config.ending.closedLine}`;
   }
 
   try {
-    const { evidence: topK, embeddingUsage } = await getTopKEvidence(storyId, query, 10);
+    const [{ evidence: topK, embeddingUsage }, allEvidence] = await Promise.all([
+      getTopKEvidence(storyId, query, 10),
+      getStoryEvidence(storyId),
+    ]);
     const context = topK
       .map(
         (e) =>
@@ -612,9 +659,10 @@ USER QUERY: ${query}
 
 위 기록을 바탕으로 질문에 직접 답하는 RESPONSE를 작성하세요. 기록 내용을 문장에 자연스럽게 녹여 넣고, SOURCES에 인용한 기록 id를 적으세요.${hypotheses.length > 0 ? " 가설이 있으면 반드시 HYPOTHESIS_IMPACT를 출력하세요. 인용 기록이 가설을 지지하면 support, 모순되면 conflict로 표기." : ""}`;
 
+    const trimmedHistory = history.slice(-8);
     const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...history
+      ...trimmedHistory
         .filter((h) => h.role && h.content)
         .map((h) => ({
           role: h.role as "user" | "assistant",
@@ -623,16 +671,9 @@ USER QUERY: ${query}
       { role: "user", content: userMessage },
     ];
 
-    let chatResult = await chatCompletion(messages, { temperature: 0.5 });
-    let parsed = parseResponse(chatResult.content);
-
-    if (!parsed.valid) {
-      chatResult = await chatCompletion(messages, { temperature: 0.2 });
-      parsed = parseResponse(chatResult.content);
-    }
-
+    const chatResult = await chatCompletion(messages, { temperature: 0.5 });
+    const parsed = parseResponse(chatResult.content);
     const rawLLM = chatResult.content;
-    const allEvidence = await getStoryEvidence(storyId);
     const resolvedSourceIds = resolveRecordIdsAgainstRecords(parsed.sources, allEvidence);
     const resolvedRecordIds = resolveRecordIdsAgainstRecords(parseRecordIdsFromLLM(rawLLM), allEvidence);
 
@@ -705,6 +746,7 @@ USER QUERY: ${query}
       solved: false,
       sessionState: { solved: false },
       usage: buildUsage(embeddingUsage, chatResult.usage),
+      ...(remainingCredits !== undefined && { remainingCredits }),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown";
@@ -861,32 +903,58 @@ function buildSceneResponse(display: StoryDisplayConfig): string {
 
   const overview = scene.summary ?? scene.details?.[0];
   return [
-    "[AREA_SCAN]",
-    scene.title,
-    "",
-    ...(overview ? [overview, ""] : []),
+    "[AREA_SCAN] " + scene.title,
+    "─".repeat(36),
+    ...(overview ? ["", overview, ""] : [""]),
+    ...(scene.art?.length ? [...scene.art, ""] : []),
     ...(scene.details?.length
-      ? ["DETAIL:", ...scene.details.map((item) => `- ${item}`), ""]
+      ? ["DETAIL:", ...scene.details.map((item) => `  · ${item}`), ""]
       : []),
     "FOCUS:",
-    ...scene.focus.map((item) => `- ${item}`),
+    ...scene.focus.map((item) => `  ▸ ${item}`),
   ].join("\n");
 }
 
-function buildCharacterResponse(display: StoryDisplayConfig): string {
+function buildSingleCharacterProfile(character: {
+  name: string;
+  role: string;
+  ascii?: string[];
+  brief: string;
+}): string {
+  return [
+    `[PROFILE] ${character.name}`,
+    `ROLE ▸ ${character.role}`,
+    "─".repeat(32),
+    ...(character.ascii?.length ? [...character.ascii, "─".repeat(32)] : []),
+    `BRIEF: ${character.brief}`,
+  ].join("\n");
+}
+
+function buildCharacterResponse(display: StoryDisplayConfig, targetName?: string): string {
   const characters = display.ASCII_CHARACTERS ?? [];
   if (characters.length === 0) {
     return "[PERSON_FILES]\n인물 시각화 데이터가 아직 등록되지 않았습니다.";
   }
 
+  if (targetName) {
+    const lower = targetName.toLowerCase();
+    const target = characters.find(
+      (c) =>
+        c.name.toLowerCase().includes(lower) ||
+        lower.includes(c.name.toLowerCase()) ||
+        (c.queryHints ?? []).some((h) => h.toLowerCase().includes(lower))
+    );
+    if (target) return buildSingleCharacterProfile(target);
+    return `[PERSON_FILES]\n'${targetName}' 프로파일을 찾을 수 없습니다.\n\n등록된 인물: ${characters.map((c) => c.name).join(", ")}`;
+  }
+
   return [
     "[PERSON_FILES]",
-    ...characters.flatMap((character, index) => [
-      "",
-      `${index + 1}. ${character.name} | ${character.role}`,
-      ...(character.ascii ?? []),
-      `- ${character.brief}`,
-    ]),
+    `등록 인원: ${characters.length}명`,
+    "─".repeat(32),
+    ...characters.map((c, i) => `${i + 1}. ${c.name}  (${c.role})\n   ${c.brief}`),
+    "─".repeat(32),
+    "상세 프로파일: /인물 [이름]",
   ].join("\n");
 }
 

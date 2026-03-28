@@ -49,7 +49,7 @@ export default async function AdminStoriesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 dark:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-800">
+              <tr className="bg-slate-50/50 dark:bg-zinc-800/50">
                 <th className="py-5 px-8 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em]">Scenario Detail</th>
                 <th className="py-5 px-6 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] text-center">Pricing</th>
                 <th className="py-5 px-6 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] text-center">Source Type</th>
@@ -57,7 +57,7 @@ export default async function AdminStoriesPage() {
                 <th className="py-5 px-8 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] text-right">Management</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-zinc-800/50">
+            <tbody>
               {stories && stories.length > 0 ? (
                 stories.map((story) => (
                   <tr key={story.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 transition-colors group">

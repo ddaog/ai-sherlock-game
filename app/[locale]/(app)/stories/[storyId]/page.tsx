@@ -285,6 +285,7 @@ interface Message {
     content?: string;
     response?: string;
     badge?: { title: string; condition: string };
+    grade?: "A" | "B" | "C";
     sources?: string[];
     suggestions?: string[];
 }
@@ -356,7 +357,7 @@ export default function StoryPlayPage() {
     const [isPremium, setIsPremium] = useState(false);
     const [isCheckingEntitlements, setIsCheckingEntitlements] = useState(true);
 
-    const { tokens, adsWatched, isDebugMode, isLoaded: isTokenLoaded, decreaseToken, setTokensForDebug, claimAdReward } = useTokenSystem(userId);
+    const { tokens, adsWatched, isDebugMode, isLoaded: isTokenLoaded, decreaseToken, setTokensForDebug, claimAdReward, syncTokens } = useTokenSystem(userId);
     const [queriesClickCount, setQueriesClickCount] = useState(0);
     const [isWatchingAd, setIsWatchingAd] = useState(false);
 
@@ -605,6 +606,7 @@ export default function StoryPlayPage() {
             if (Array.isArray(data.seenRecordIds)) setSeenRecordIds(data.seenRecordIds);
             if (Array.isArray(data.triggeredBadges)) setTriggeredBadges(data.triggeredBadges);
             if (data.solved === true) setSolved(true);
+            if (typeof data.remainingCredits === "number") syncTokens(data.remainingCredits);
             setPendingHypothesisReplace(data.sessionState?.pendingHypothesisReplace);
             if (typeof data.sessionState?.hintCount === "number") {
                 setHintCount(data.sessionState.hintCount);
@@ -616,6 +618,7 @@ export default function StoryPlayPage() {
                     role: "assistant",
                     response: data.response,
                     badge: data.badge,
+                    grade: data.grade,
                     sources: data.sources || [],
                     suggestions: data.suggestions || [],
                 },
@@ -812,6 +815,46 @@ export default function StoryPlayPage() {
                                 <p>{highlightVictim(displayConfig.CASE_HOOK, VICTIM_NAME, VICTIM_ALIASES)}</p>
                             </div>
                         ) : null}
+
+                        {displayConfig.INVESTIGATION_TRACKS && displayConfig.INVESTIGATION_TRACKS.length > 0 && seenRecordIds.length > 0 && (
+                            <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
+                                <p className="font-mono text-[10px] tracking-[0.24em] uppercase text-archive-accent">
+                                    [Investigation Board]
+                                </p>
+                                <h2 className="text-[15px] font-semibold text-white -mt-2">수사 진행도</h2>
+                                <div className="space-y-4">
+                                    {displayConfig.INVESTIGATION_TRACKS.map((track) => {
+                                        const seen = track.recordIds.filter((id) => seenRecordIds.includes(id)).length;
+                                        const total = track.recordIds.length;
+                                        const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+                                        const done = seen === total;
+                                        return (
+                                            <div key={track.id} className="space-y-1.5">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className={`font-mono text-[12px] tracking-wide ${done ? "text-archive-accent" : "text-archive-text"}`}>
+                                                        {done && "✓ "}{track.title}
+                                                    </span>
+                                                    <span className="font-mono text-[11px] text-archive-muted">{seen}/{total}</span>
+                                                </div>
+                                                <div className="h-1 bg-archive-border-subtle rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-500 ${done ? "bg-archive-accent" : "bg-archive-accent/40"}`}
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => handleQuickAction("/단서")}
+                                    className="mt-2 w-full border border-archive-accent/30 px-3 py-1.5 text-[10px] font-mono tracking-[0.2em] uppercase text-archive-accent/70 hover:text-archive-accent hover:border-archive-accent/60 transition-colors"
+                                >
+                                    [/단서] 전체 수사 현황 조회
+                                </button>
+                            </section>
+                        )}
 
                         {asciiScene && hasSceneIntel ? (
                             <section className="border border-archive-border bg-[#141414] rounded-sm p-5 space-y-4">
@@ -1043,6 +1086,29 @@ export default function StoryPlayPage() {
                                     </p>
                                 ) : (
                                     <div className="space-y-5 text-[16px] font-serif">
+                                        {msg.grade && msg.grade !== "A" && (
+                                            <div className={`px-5 py-4 rounded-md border font-mono ${
+                                                msg.grade === "B"
+                                                    ? "bg-yellow-900/10 border-yellow-500/30"
+                                                    : "bg-red-900/10 border-red-500/20"
+                                            }`}>
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <span className={`text-[22px] font-black tracking-widest ${
+                                                        msg.grade === "B" ? "text-yellow-400" : "text-red-400"
+                                                    }`}>GRADE {msg.grade}</span>
+                                                    <span className="text-archive-muted text-[11px] tracking-widest uppercase">NOT SOLVED</span>
+                                                </div>
+                                                <div className="flex gap-1 mb-4">
+                                                    {["A", "B", "C"].map((g) => (
+                                                        <div key={g} className={`h-1.5 flex-1 rounded-full ${
+                                                            g === msg.grade
+                                                                ? msg.grade === "B" ? "bg-yellow-400" : "bg-red-400"
+                                                                : "bg-archive-border-subtle"
+                                                        }`} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                         {msg.response && (
                                             <div className="text-white leading-[1.8] whitespace-pre-wrap px-5 py-4 bg-[#141414] border-l-2 border-archive-accent rounded-r-md">
                                                 {i === messages.length - 1 && !loading ? (

@@ -186,7 +186,14 @@ function mergeDisplayWithFallback(
 
   for (const fallbackCharacter of fallbackCharacters) {
     if (!mergedCharacters.some((character) => character.name === fallbackCharacter.name)) {
-      mergedCharacters.push(fallbackCharacter);
+      mergedCharacters.push({
+        name: fallbackCharacter.name,
+        role: fallbackCharacter.role,
+        ascii: fallbackCharacter.ascii ?? [],
+        sourceMd: fallbackCharacter.sourceMd,
+        brief: fallbackCharacter.brief,
+        queryHints: fallbackCharacter.queryHints ?? [],
+      });
     }
   }
 
